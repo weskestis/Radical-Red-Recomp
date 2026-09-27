@@ -1,0 +1,88 @@
+name: Radical Red certification
+
+on:
+  push:
+    branches:
+      - main
+      - "hardening/**"
+  pull_request:
+    branches:
+      - main
+      - "hardening/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radical-red-certification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rom-free:
+    name: ROM-free regression and package gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install test runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes luajit unzip
+
+      - name: Prepare pinned gen1recomp engine
+        run: ci/prepare_engine.sh "$RUNNER_TEMP/gen1recomp"
+
+      - name: Run ROM-free certification
+        run: ci/run_rom_free.sh "$RUNNER_TEMP/gen1recomp"
+
+  full-rom:
+    name: Private exact-ROM and Android gate
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install test runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes luajit unzip
+
+      - name: Materialize private test inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          input_dir="$RUNNER_TEMP/private-inputs"
+          mkdir -p "$input_dir"
+          git fetch --no-tags --depth=1 origin private-test-inputs
+          git show FETCH_HEAD:test-inputs/radical_red_v4_1.gba \
+            > "$input_dir/radical_red_v4_1.gba"
+          git show FETCH_HEAD:test-inputs/firered_v1_0.gba \
+            > "$input_dir/firered_v1_0.gba"
+
+      - name: Prepare pinned gen1recomp engine
+        run: ci/prepare_engine.sh "$RUNNER_TEMP/gen1recomp"
+
+      - name: Run full-ROM certification
+        run: >-
+          ci/run_full_rom.sh
+          "$RUNNER_TEMP/gen1recomp"
+          "$RUNNER_TEMP/private-inputs/radical_red_v4_1.gba"
+          "$RUNNER_TEMP/private-inputs/firered_v1_0.gba"
+
+      - name: Remove private test inputs
+        if: always()
+        run: |
+          input_dir="$RUNNER_TEMP/private-inputs"
+          if [[ -d "$input_dir" ]]; then
+            find "$input_dir" -type f -exec shred -u -- {} + || true
+          fi
+

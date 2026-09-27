@@ -1,0 +1,51 @@
+name: Tester bug report
+description: Report a Radical Red recomp crash or parity problem.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: input
+    id: build
+    attributes:
+      label: Build and commit
+      description: Include the displayed mod version and commit when available.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and operating system
+      placeholder: RedMagic model, Android 16 / RedMagic OS
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Exact reproduction steps
+      description: Start from the last save or new game and list every input.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Radical Red behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Full error text or lua-error.log
+      description: Remove personal information before posting logs.
+      render: text
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshot or video
+      description: Drag the file into this field when useful.
+

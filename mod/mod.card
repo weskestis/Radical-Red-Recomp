@@ -1,0 +1,36 @@
+return {
+  summary = "Radical Red v4.1 runtime total conversion for stock gen1recomp.",
+  author = "Wes Kestis",
+  tags = { "total-conversion", "firered", "radical-red" },
+  differences = {
+    changed = {
+      "Radical Red's 425-map world, scripts, encounters, trainers, title, UI, and audio replace the active FireRed dataset",
+      "all 1,376 species, 1,004 moves, 282 abilities, and 750 items are loaded from the exact v4.1 ROM",
+      "battle and AI calculations use Radical Red's move split, Fairy type, and modern type chart",
+      "new games use Radical Red v4.1's own setup prompts and exact difficulty, grinding, and randomizer choices",
+      "Radical Red uses a separate save scope and activates automatically when this mod is enabled",
+    },
+    added = {
+      "all 72 native callbacks referenced by the Radical Red v4.1 script set",
+      "raid battle rules, rewards, captures, Max moves, barriers, and repeated boss attacks",
+      "ROM-backed facilities, rental teams, followers, level caps, starters, eggs, and story utilities",
+      "immediate running shoes and complete SO2Toxic, DexAll, Woyaopp, TeamPreview, and EZCatch console-code behavior",
+    },
+    known = {
+      "the first start builds a private cache from the player's exact 32 MiB Radical Red v4.1 ROM",
+      "the Android-safe first start opens a progress screen and converts between rendered frames using bounded ROM pages",
+      "the setup screen is the original ROM flow; the mod does not add replacement gameplay options",
+      "some CFRU-only modern move effects, ability triggers, held-item triggers, and GBA animations exceed the current host battle model",
+      "the launcher and engine are not modified; the mod uses the stock engine_internals permission",
+      "no ROM-derived bytes or extracted copyrighted assets are distributed",
+    },
+  },
+  credits = {
+    { who = "Soupercell and the Radical Red team", for_ = "the original ROM hack, design, and content" },
+    { who = "Skeli789 and Dynamic Pokemon Expansion / CFRU contributors", for_ = "the expanded data formats and battle-engine lineage" },
+    { who = "pret/pokefirered", for_ = "the clean FireRed decompilation reference" },
+    { who = "bryanthaboi/gen1recomp contributors", for_ = "the native engine and mod API" },
+    { who = "OpenAI", for_ = "checkpoint integration, verification tooling, and documentation" },
+  },
+  compat = { engine = ">=0.0.0-dev <1.0.0", modApi = 2 },
+}

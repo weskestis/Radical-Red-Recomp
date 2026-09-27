@@ -1,0 +1,10 @@
+.ci/
+.tmp/
+*.gba
+*.gb
+*.gbc
+*.zip
+mod_cache/
+love/
+lua-error.log
+

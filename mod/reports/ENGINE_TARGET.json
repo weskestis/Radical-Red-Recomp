@@ -1,0 +1,17 @@
+{
+  "game": "firered",
+  "modApi": 2,
+  "testedReleases": [
+    {
+      "archive": "gen1recomp-0.3.5.zip",
+      "archiveSha256": "a0eda0a1ea34eb6583a6f2a2afe39d1eca4ba481365837ef92f9a9c94a3184f5",
+      "commitMarker": "8b2f38149cf93d8e18556d3d2aad8b9bbfb5a44b",
+      "release": "0.3.5"
+    },
+    {
+      "archive": "gen1recomp-0.3.20.zip",
+      "archiveSha256": "1ec81db7411c98f544a58572ae6d942fad411c5254bd15a433572f3298329439",
+      "release": "0.3.20"
+    }
+  ]
+}
