@@ -1,4 +1,4 @@
-# Radical Red 0.5.13 verification status
+# Radical Red 0.5.14 verification status
 
 Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 
@@ -59,14 +59,18 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 - Console codes: exact matching and persistent flags for `SO2Toxic`, `DexAll`,
   `Woyaopp`, `TeamPreview`, and `EZCatch`; DexNav disclosure, opponent preview,
   guaranteed catch, early-item, and Viridian level-cap paths are exercised.
+- DexNav: story unlock and DexAll disclosure, Register/Scan/Cancel, saved
+  registration and search levels, chain lifecycle, R/SELECT controls, fishing
+  rods, complete generated battle payloads, and CFRU search bonuses are live.
 - Party selection: the live close-before-select callback commits slot two
   before the next native; Combee eligibility and gender mutation are verified.
 - Battle text: all expanded CFRU placeholders present in the v4.1 bundle are
-  resolved, including the `B_BUFF3` post-rival gained-EXP field.
+  resolved, including the `B_BUFF3` post-rival gained-EXP field; sparse effect
+  text recovers the live self-target defender used by Roost.
 - Original randomizers: ROM-backed species, scaled-species, ability, and
   learnset mappings seeded by the full trainer ID.
 - Cold bootstrap: 193 resumable frame-loop checkpoints; longest measured
-  release-gate chunk 1.689 seconds (three-second regression ceiling), including
+  release-gate chunk 1.931 seconds (three-second regression ceiling), including
   the readBytes-only Android fixture.
 - Launcher/engine source modifications: none.
 
@@ -80,6 +84,8 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 | Field/QoL native callbacks | PASS |
 | Immediate running shoes and existing-save repair | PASS |
 | All five bedroom-console codes and host effects | PASS |
+| DexNav register/scan/search/chain and R/SELECT controls | PASS |
+| DexNav level, move, ability, item, shiny, and IV generation | PASS |
 | Live second-slot Combee gender change | PASS |
 | Facility generation and party restore | PASS |
 | Raid selection, rewards, capture, and combat rules | PASS |
@@ -93,6 +99,7 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 | All 16 ROM-defined custom menu tables and result paths | PASS |
 | All 425 layouts, 1,324 warps, and 116 map connections | PASS |
 | All 134 wild maps / 4,866 day-night slots; no species zero | PASS |
+| All 4,866 wild slots have usable moves at min/max level | PASS |
 | Route 23–Indigo Plateau and duplicate Six Island edges | PASS |
 | True collision/render bounds for 306 odd-sized layouts | PASS |
 | ROM-exact species, ability, and learnset randomizers | PASS |
@@ -107,7 +114,7 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 | Normal Options draw through the affected Android color-call contract | PASS |
 | Portable Options fallback after a forced renderer failure | PASS |
 | Exact Turtwig preview/gift through `0x5124` with randomizer active | PASS |
-| Post-rival EXP sequence and all used expanded battle placeholders | PASS |
+| Post-rival EXP, Roost, and all used expanded battle placeholders | PASS |
 | Exact stock Loader with real v4.1 ROM | PASS |
 | gen1recomp 0.3.20 ROM importer compatibility | PASS |
 | Legacy/vendor Android readBytes-only tileset compatibility | PASS |

@@ -1,4 +1,4 @@
-# Verification report — Radical Red 0.5.13
+# Verification report — Radical Red 0.5.14
 
 This report records the release-candidate gate run against the exact Radical
 Red v4.1 ROM. Private ROM bytes and generated assets are not part of the mod
@@ -17,6 +17,8 @@ package.
 | Running shoes active before the first playable step | PASS |
 | All five bedroom-console codes and persistent flags | PASS |
 | DexAll, TeamPreview, and EZCatch host behavior | PASS |
+| DexNav registration, scanning, search levels, chains, rods, and R shortcut | PASS |
+| DexNav encounter bonuses and complete battle payloads | PASS |
 | Woyaopp Viridian service and SO2Toxic item branches | PASS |
 | Live party-menu slot-two Combee gender change | PASS |
 | Region-selected starter is preserved with species randomization active | PASS |
@@ -29,6 +31,7 @@ package.
 | 306 odd-sized maps normalized to true ROM bounds | PASS |
 | 134 wild maps and 4,866 valid base/day/night encounter slots | PASS |
 | 177 species-zero placeholders removed; final battle guard active | PASS |
+| All 4,866 wild slots have moves at minimum and maximum levels | PASS |
 | Route 23–Indigo Plateau reciprocal path | PASS |
 | Three west edges on Six Island Water Path retained | PASS |
 | 1,376 species / 1,004 moves / 282 abilities / 750 items | PASS |
@@ -50,7 +53,7 @@ package.
 | Extended CFRU variables in preview/gift/egg/cry commands | PASS |
 | Exact Turtwig `showmonpic` and `givemon` path through variable `0x5124` | PASS |
 | Post-rival gained-EXP sequence and CFRU `B_BUFF3` expansion | PASS |
-| All expanded battle placeholders used by the v4.1 text bundle | PASS |
+| All expanded battle placeholders, including sparse Roost defender text | PASS |
 | Modern category split, Fairy, and type effectiveness | PASS |
 | 72/72 real script-native targets handled | PASS |
 | Facilities and rental-party behavior | PASS |

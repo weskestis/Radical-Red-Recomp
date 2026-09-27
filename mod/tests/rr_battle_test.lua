@@ -91,15 +91,22 @@ function BattleText.context(fill)
     battle = setmetatable({}, {
       __index = function(_, code)
         if code == 0x30 then return assert(fill.buff3) end
+        if code == 0x10 then
+          local defender = assert(fill.def,
+            "battle text {B_DEF_NAME_WITH_PREFIX} needs fill.def")
+          return defender.nickname or defender.name or tostring(defender)
+        end
         error("battle text placeholder code " .. tostring(code) .. " is not a B_TXT id")
       end,
     }),
   }
 end
 local TextIR = { B_TXT = {} }
+local activeEffect
+local EffectCtx = { current = function() return activeEffect end }
 local report = Battle.install(rom, {
   Types = Types, Moves = Moves, Damage = Damage, Engine = Engine, State = State,
-  BattleText = BattleText, TextIR = TextIR,
+  BattleText = BattleText, TextIR = TextIR, EffectCtx = EffectCtx,
 })
 
 assert(report.moveCategories == 1004)
@@ -113,6 +120,17 @@ assert(BattleText.context({ atk = "player" }).battle[0x38] == "Your")
 assert(BattleText.context({ atk = "enemy" }).battle[0x38] == "Foe's")
 assert(BattleText.context({ opponentMon1 = { nickname = "Sparky" } }).battle[0x3A]
   == "Sparky")
+activeEffect = {
+  user = { side = "player", nickname = "ROOSTER" },
+  target = { side = "enemy", nickname = "WRONG TARGET" },
+  move = { target = 16 },
+}
+assert(BattleText.context({}).battle[0x10] == "ROOSTER",
+  "Roost did not recover B_DEF_NAME_WITH_PREFIX from the active self-target effect")
+local explicitDef = { side = "enemy", nickname = "EXPLICIT" }
+assert(BattleText.context({ def = explicitDef }).battle[0x10] == "EXPLICIT",
+  "effect-context recovery replaced an explicitly supplied defender")
+activeEffect = nil
 assert(TextIR.B_TXT[0x34] == "B_BUFF3"
   and TextIR.B_TXT[0x38] == "B_ATK_TEAM2"
   and TextIR.B_TXT[0x3A] == "B_DEF_TEAM1")

@@ -187,7 +187,7 @@ return function(mod)
     end
     pcall(function()
       mod.cache:write("diagnostics/last_boot_error.txt",
-        "Radical Red 0.5.13 first-launch setup failed\n"
+        "Radical Red 0.5.14 first-launch setup failed\n"
           .. "stage=" .. tostring(boot.stage) .. "\n"
           .. boot.err .. "\n")
     end)

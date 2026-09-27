@@ -1,6 +1,6 @@
 # Radical Red
 
-Radical Red 0.5.13 is a FireRed-only runtime total conversion for unmodified
+Radical Red 0.5.14 is a FireRed-only runtime total conversion for unmodified
 gen1recomp 0.3.5 and 0.3.20. It validates the player's own Pokémon Radical Red
 v4.1 ROM, builds a private cache on first start, and mounts that data as the
 active game. No launcher, executable, APK, or engine file is modified.
@@ -33,8 +33,10 @@ not overwrite each other's saves.
   caps, random starters/eggs, followers, facilities, and story utilities;
 - running shoes from the first step, plus the original bedroom-console codes:
   `SO2Toxic`, `DexAll`, `Woyaopp`, `TeamPreview`, and `EZCatch`;
-- a current-area DexNav whose unseen details are unlocked by `DexAll`, and an
-  opponent-team preview opened with L or SELECT after `TeamPreview` is set;
+- a functional current-area DexNav with persistent registration, search levels,
+  chains, scan encounters, rod requirements, egg moves, hidden abilities,
+  held items, IV potential, and the registered R-button shortcut; `DexAll`
+  reveals unseen entries, while SELECT registers on Android without R;
 - raid encounters, rewards, capture flow, barriers, Max moves, repeated boss
   attacks, stat nullification, and raid loss rules;
 - ROM-backed facility trainers, spreads, rentals, and party restoration.
@@ -74,7 +76,7 @@ The first start opens the game, displays live conversion progress, and keeps
 Android responsive while the bounded ROM reader and staged extractor do their
 work. Interrupted cache work is safely resumed. If a conversion step fails,
 the exact stage and error remain visible instead of silently returning to the
-launcher. Version 0.5.13 negotiates the string, numeric byte-array, and
+launcher. Version 0.5.14 negotiates the string, numeric byte-array, and
 byte-at-a-time ROM-reader interfaces found across supported Android payloads.
 Its legacy numeric-array path copies bounded ROM pages in blocks so conversion
 does not stall the Android main thread once per byte.
@@ -103,6 +105,12 @@ effects; `TeamPreview` also accepts SELECT for Android overlays without an L
 button. Party selection is committed before the next ROM callback, so choosing
 Combee or another supported Pokémon outside slot one reaches the correct
 gender/form/level operation.
+DexNav's former display-only list now executes its Register, Scan, and Cancel
+actions and persists search progress in the Radical Red save. Scan encounters
+carry CFRU's level, shiny-check, egg-move, ability, held-item, and IV-potential
+bonuses into the live battle. Roost and other CFRU effect text can recover the
+active self-target battler when the ROM script omits an explicit defender,
+without replacing a defender supplied by the normal battle engine.
 
 ## Verification
 
@@ -120,8 +128,10 @@ connection/landing (including Route 23–Indigo Plateau), the post-rival
 gained-EXP sequence, and the exact extended-variable Turtwig preview and gift
 commands that use `0x5124`. It also enters every bedroom-console code, checks
 its cartridge branch and persistent flag, exercises all four host-side QoL
-effects, and reproduces a second-slot Combee gender change through the live
-party menu.
+effects, generates complete DexNav battle payloads, validates that all 4,866
+wild slots have usable moves at their encounter levels, exercises Roost's
+sparse and ordinary battle-text paths, and reproduces a second-slot Combee
+gender change through the live party menu.
 
 The release gate is recorded in `docs/CHECKPOINT_STATUS.md`. It includes both
 supported stock loaders, the original setup-menu path, live randomizer

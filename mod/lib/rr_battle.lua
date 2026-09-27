@@ -123,7 +123,7 @@ end
 -- stock FireRed host stops at B_BUFF3=0x30, while this ROM contains 0x34,
 -- 0x38, and 0x3A. Wrap the public context instead of editing the engine so
 -- cached and freshly extracted text share the same compatibility path.
-local function installBattleTextCompat(BattleText, TextIR, State)
+local function installBattleTextCompat(BattleText, TextIR, State, EffectCtx)
   if not (BattleText and type(BattleText.context) == "function") then return 0 end
   local state = textInstallations[BattleText]
   if not state then
@@ -131,6 +131,20 @@ local function installBattleTextCompat(BattleText, TextIR, State)
     textInstallations[BattleText] = state
     BattleText.context = function(fill)
       fill = fill or {}
+      -- CFRU has a few move-effect paths whose text relies on the live
+      -- attacker/defender globals instead of explicitly passing both values.
+      -- The stock host deliberately requires an explicit fill table.  Bridge
+      -- that difference while an effect is active, but never replace a value
+      -- a normal engine caller supplied.  Roost's recovered-health text is the
+      -- first visible example: it expands B_DEF_NAME_WITH_PREFIX.
+      if fill.def == nil and EffectCtx and type(EffectCtx.current) == "function" then
+        local active = EffectCtx.current()
+        if active then
+          local moveTarget = tonumber(active.move and active.move.target)
+          fill.def = (moveTarget == 16 and active.user)
+            or active.target or active.user
+        end
+      end
       local ctx = state.originalContext(fill)
       local stock = ctx.battle
       ctx.battle = setmetatable({}, {
@@ -183,6 +197,7 @@ function Battle.install(rom, deps)
   local State = deps.State
   local BattleText = deps.BattleText
   local TextIR = deps.TextIR
+  local EffectCtx = deps.EffectCtx
   if BattleText == nil then
     local ok, module = pcall(require, "src.core.game3.battle.battle_text")
     if ok then BattleText = module end
@@ -191,7 +206,12 @@ function Battle.install(rom, deps)
     local ok, module = pcall(require, "src.core.game3.scripting.text_ir")
     if ok then TextIR = module end
   end
-  local placeholderCount = installBattleTextCompat(BattleText, TextIR, State)
+  if EffectCtx == nil then
+    local ok, module = pcall(require, "src.core.game3.battle.effect_ctx")
+    if ok then EffectCtx = module end
+  end
+  local placeholderCount = installBattleTextCompat(
+    BattleText, TextIR, State, EffectCtx)
 
   local state = installations[Types]
   if not state then

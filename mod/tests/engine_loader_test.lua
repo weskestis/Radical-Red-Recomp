@@ -313,6 +313,7 @@ assert(exports.visualReport.momPaletteTag == 0x1168)
 -- must be represented as no encounter, never as a level-1 species-zero foe.
 do
   local Encounters = require("src.core.game3.encounters")
+  local WildPokemon = require("src.core.game3.pokemon")
   local viridian = assert(Encounters.tableFor("FR_VIRIDIAN_CITY"))
   assert(viridian.__rrBase and viridian.__rrBase.land == nil,
     "Viridian's species-zero fallback grass table remained active")
@@ -339,6 +340,12 @@ do
               assert(slot.minLevel >= 1 and slot.minLevel <= 100
                 and slot.maxLevel >= 1 and slot.maxLevel <= 100,
                 "invalid wild level survived extraction on " .. key)
+              local lowMoves = WildPokemon.movesAtLevel(slot.species, slot.minLevel)
+              local highMoves = WildPokemon.movesAtLevel(slot.species, slot.maxLevel)
+              assert(type(lowMoves) == "table" and #lowMoves > 0
+                  and type(highMoves) == "table" and #highMoves > 0,
+                ("wild species %d has no battle moves at levels %d-%d on %s")
+                  :format(slot.species, slot.minLevel, slot.maxLevel, key))
               slots = slots + 1
             end
           end
@@ -883,10 +890,39 @@ do
     assert(dexLayer and dexLayer.id == "rr_dexnav"
         and #dexLayer.mod.rows > 0,
       "DexNav did not load Viridian encounter rows")
-    for _, row in ipairs(dexLayer.mod.rows) do
+    for index, row in ipairs(dexLayer.mod.rows) do
       assert(row.revealed and row.name ~= "??????????",
         "DexAll left hidden encounter data in DexNav")
+      -- Every current-area slot that does not require a fishing rod must be
+      -- capable of producing a complete battle payload.  This catches the
+      -- old display-only DexNav as well as species-zero/no-moves regressions.
+      local needsRod = true
+      for _, slot in ipairs(row.scanSlots or {}) do
+        if not slot.requiredItem then needsRod = false break end
+      end
+      if not needsRod then
+        dexLayer.mod.cursor = index
+        local encounter, encounterErr = dexLayer.mod.generateSelected()
+        assert(encounter, "DexNav could not generate " .. tostring(row.name)
+          .. ": " .. tostring(encounterErr))
+        assert(encounter.rrDexNav == true and encounter.species == row.species
+            and encounter.level >= 1 and encounter.level <= 100,
+          "DexNav generated an invalid species/level payload")
+        assert(type(encounter.moves) == "table" and #encounter.moves > 0,
+          "DexNav generated a species with no usable moves")
+        assert(type(encounter.ivs) == "table"
+            and encounter.ivs.hp ~= nil and encounter.ivs.atk ~= nil
+            and encounter.ivs.def ~= nil and encounter.ivs.spe ~= nil
+            and encounter.ivs.spa ~= nil and encounter.ivs.spd ~= nil,
+          "DexNav did not generate a complete IV payload")
+      end
     end
+    dexLayer.mod.cursor = 1
+    assert(dexLayer.mod.registerSelected() == true,
+      "DexNav could not register its selected species")
+    local dexState = assert(session.modData.radical_red_experience.dexNav)
+    assert(dexState.registeredSpecies == dexLayer.mod.rows[1].species,
+      "DexNav registration was not persisted in the save session")
     dexLayer.mod.close()
     session.map = oldMap
 
@@ -1159,6 +1195,44 @@ local function battleMon(species, level, moves)
   mon.hp = mon.maxHp
   return mon
 end
+
+-- RR's Roost uses the ordinary recover effect but its extracted battle text
+-- names the battler through B_DEF_NAME_WITH_PREFIX. Exercise the live engine
+-- path so a missing placeholder fill cannot escape the text-only tests above.
+do
+  local roostMon = battleMon(16, 50, { 395 })
+  local foeMon = battleMon(19, 50, { 33 })
+  local roostState = State.new({
+    wild = true, playerParty = { roostMon }, foeMon = foeMon,
+    foeParty = { foeMon }, rng = function(lo) return lo or 0 end,
+  })
+  roostState.player.mon.hp = math.max(1, roostState.player.mon.maxHp - 20)
+  local before = roostState.player.mon.hp
+  local roostOut = {}
+  local roostAdapter = Adapter.new(roostState, function() end)
+  Engine.resolveMove(roostState.player, roostState.enemy, 395, 1,
+    roostAdapter, roostState, roostOut)
+  assert(roostState.player.mon.hp > before,
+    "Roost did not restore the user's HP")
+  assert(table.concat(roostOut, " | "):find("regained", 1, true),
+    "Roost did not render its recovered-health battle text")
+
+  -- CFRU move scripts can request the same text without an explicit fill.def;
+  -- the live effect globals still identify the user.  Reproduce the tester's
+  -- exact failure instead of relying only on the normal healing helper, which
+  -- currently passes def itself.
+  local EffectCtx = require("src.core.game3.battle.effect_ctx")
+  local BattleText = require("src.core.game3.battle.battle_text")
+  EffectCtx.push(roostAdapter, roostState.player, roostState.player,
+    { target = 16 }, 395, function(lo) return lo or 0 end, {})
+  local okText, sparseRoostText = pcall(BattleText.get,
+    "STRINGID_PKMNREGAINEDHEALTH", {})
+  EffectCtx.pop()
+  assert(okText and sparseRoostText:find("regained", 1, true),
+    "Roost's sparse CFRU text context still requires fill.def: "
+      .. tostring(sparseRoostText))
+end
+
 local p1 = battleMon(1, 60, { 33, 45, 280 })
 local p2 = battleMon(4, 60, { 33 })
 local bossMon = battleMon(127, 60, { 33, 45 })

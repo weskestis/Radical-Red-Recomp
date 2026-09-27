@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.5.14 — Functional DexNav and Roost text repair
+
+- Replace the display-only current-area DexNav with working Register, Scan,
+  and Cancel actions, plus persistent species registration, search levels,
+  chains, and the registered R-button field shortcut. SELECT remains the
+  registration fallback for Android overlays without a shoulder button.
+- Generate complete DexNav wild encounters with the selected area's exact
+  level range, chain bonuses, shiny checks, egg-move and hidden-ability odds,
+  held-item bonuses, IV potential, and fishing-rod requirements. Failed,
+  escaped, ordinary, and cross-map battles reset chains correctly.
+- Recover CFRU's live defender from the active move-effect context when battle
+  text omits `fill.def`. This fixes Roost's
+  `B_DEF_NAME_WITH_PREFIX needs fill.def` crash while preserving explicit
+  attacker/defender values on ordinary engine paths.
+- Extend the exact-ROM gate to construct real DexNav payloads, persist a
+  registration, reproduce Roost's sparse text call, and verify that every one
+  of the 4,866 base/day/night wild slots has at least one usable move at both
+  ends of its encounter-level range.
+- Repeat modern Android cold extraction, cached relaunch, and readBytes-only
+  vendor/Redmagic-style cold extraction under the 256 MiB address-space limit.
+
 ## 0.5.13 — Running shoes, console codes, and party-selection repair
 
 - Grant Radical Red's running-shoes flag before the first step on a new game,
