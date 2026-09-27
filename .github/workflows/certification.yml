@@ -61,12 +61,16 @@ jobs:
         run: |
           set -Eeuo pipefail
           input_dir="$RUNNER_TEMP/private-inputs"
+          archive="$input_dir/private-rom-inputs.zip"
           mkdir -p "$input_dir"
           git fetch --no-tags --depth=1 origin private-test-inputs
-          git show FETCH_HEAD:test-inputs/radical_red_v4_1.gba \
-            > "$input_dir/radical_red_v4_1.gba"
-          git show FETCH_HEAD:test-inputs/firered_v1_0.gba \
-            > "$input_dir/firered_v1_0.gba"
+          : > "$archive"
+          for part in {000..043}; do
+            git show "FETCH_HEAD:test-inputs/private-rom-inputs.zip.part-$part" >> "$archive"
+          done
+          echo "004b334dd312508b284982dffd01e32e7ccfafd42dd4e80ffd0f639c3ce5cb10  $archive" | sha256sum --check
+          unzip -q "$archive" -d "$input_dir"
+          rm -f "$archive"
 
       - name: Prepare pinned gen1recomp engine
         run: ci/prepare_engine.sh "$RUNNER_TEMP/gen1recomp"
@@ -85,4 +89,3 @@ jobs:
           if [[ -d "$input_dir" ]]; then
             find "$input_dir" -type f -exec shred -u -- {} + || true
           fi
-
