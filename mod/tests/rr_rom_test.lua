@@ -18,13 +18,15 @@ local Profile = assert(loadfile("lib/rr_profile.lua"))()
 local rom = RR.open(imports, RR.IMPORT_ID)
 local report = rom:verify()
 
-assert(Profile.CACHE_SCHEMA == 14)
+assert(Profile.CACHE_SCHEMA == 15)
 assert(Profile.OFFSET.wildMonDayHeaders == 0x1166AB8)
 assert(Profile.OFFSET.wildMonNightHeaders == 0x1166428)
 assert(Profile.OFFSET.overworldGraphicsPointers == 0x0EB1000)
 assert(Profile.OFFSET.overworldPokemonGraphicsPointers == 0x134FD7C)
 assert(Profile.OFFSET.overworldPlayerGraphicsPointers == 0x134FCB8)
 assert(Profile.OFFSET.namingRivalGfx == 0x0EE82B0)
+assert(Profile.OFFSET.partyMenuSlotTilemap == 0x045A180)
+assert(Profile.OFFSET.partyMenuSlotEmptyTilemap == 0x045A210)
 assert(Profile.OW_COUNT == 257)
 assert(Profile.OW_RUNTIME_PRIMARY_COUNT == 256)
 assert(Profile.OW_POKEMON_COUNT == 240)
@@ -116,6 +118,14 @@ assert(bulbasaur.types[1] == "GRASS" and bulbasaur.types[2] == "POISON")
 local clefairy = rom:species(35)
 assert(clefairy.name == "Clefairy")
 assert(clefairy.types[1] == "FAIRY" or clefairy.types[2] == "FAIRY")
+
+-- Species 0x04FF is Radical Red's Seviian Ursaring. It intentionally keeps
+-- the display name Ursaring while using the Ghost/Fighting regional-form
+-- sprite and data; do not "repair" it with ordinary Ursaring's art.
+local seviianUrsaring = rom:species(0x04FF)
+assert(seviianUrsaring.name == "Ursaring")
+assert(seviianUrsaring.types[1] == "GHOST"
+  and seviianUrsaring.types[2] == "FIGHTING")
 
 for index = 252, 276 do
   assert(not rom:species(index).populated)

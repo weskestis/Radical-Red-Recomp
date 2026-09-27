@@ -280,6 +280,9 @@ assert(exports.randomizerReport.scaledPool == 330)
 assert(exports.randomizerReport.abilityPool == 236)
 assert(exports.randomizerReport.movePool == 806)
 assert(exports.randomizerReport.regionalStarterPreserved == true)
+assert(exports.randomizerReport.fixedRivals == true)
+assert(exports.randomizerReport.fixedRivalClasses == 2)
+assert(exports.randomizerReport.fixedRivalIds == 12)
 assert(exports.facilityReport.nativeCallbacks == 10)
 assert(exports.facilityReport.dynamicTrainerIds == true)
 assert(exports.raidReport.specialCallbacks == 8)
@@ -295,6 +298,8 @@ assert(exports.visualReport.gameModesChoiceDraw == true)
 assert(exports.visualReport.portableChoiceDraw == true)
 assert(exports.visualReport.gameModesFadeGuard == true)
 assert(exports.visualReport.setupMessageFadeGuard == true)
+assert(exports.visualReport.summaryDetailLayout == true)
+assert(exports.visualReport.partyGridLayout == true)
 assert(exports.visualReport.expandedGraphicsIds == true)
 assert(exports.visualReport.expandedGraphicsTables == true)
 assert(exports.visualReport.objectGraphicsSelector == true)
@@ -307,6 +312,127 @@ assert(exports.visualReport.usedPaletteCount == 397)
 assert(exports.visualReport.stuffulGraphicsId == 0x016E)
 assert(exports.visualReport.playerPaletteTag == 0x1100)
 assert(exports.visualReport.momPaletteTag == 0x1168)
+
+-- RR swaps the two halves of FireRed's move-detail screen and replaces the
+-- stock party list with a two-column grid. Verify the live engine functions,
+-- not just the report booleans, so stale FireRed coordinates cannot pass.
+do
+  local SummaryMenu = require("src.ui.game3.summary_menu")
+  local SummaryChrome = require("src.ui.game3.summary_chrome")
+  local oldPage = SummaryMenu._page
+  SummaryMenu._page = SummaryMenu.PAGE_MOVES
+  local ordinary = assert(SummaryChrome.manifest())
+  assert(ordinary.coords.name.x == 40
+      and ordinary.moveSlots[1].nameX == 163,
+    "ordinary summary-page coordinates were unexpectedly changed")
+  SummaryMenu._page = SummaryMenu.PAGE_MOVES_INFO
+  local detail = assert(SummaryChrome.manifest())
+  assert(detail.coords.name.x == 160 and detail.coords.gender.x == 225
+      and detail.coords.monIcon.x == 128,
+    "RR move-detail Pokemon header did not move to the right pane")
+  assert(detail.moveSlots[1].typeX == 3
+      and detail.moveSlots[1].nameX == 43
+      and detail.moveSlots[1].ppX == 76
+      and detail.moveSlots[5].nameY == 133,
+    "RR move-detail move rows did not move to the left pane")
+  assert(detail.movesInfo.power.x == 177
+      and detail.movesInfo.accuracy.x == 177
+      and detail.movesInfo.desc.x == 127,
+    "RR move-detail stats did not move to the right pane")
+
+  local cursorWrapper = SummaryChrome.drawMoveSelectionCursor
+  local originalCursor, originalCursorIndex
+  for index = 1, 32 do
+    local name, value = debug.getupvalue(cursorWrapper, index)
+    if not name then break end
+    if name == "originalCursor" then
+      originalCursor, originalCursorIndex = value, index
+      break
+    end
+  end
+  assert(originalCursorIndex, "RR move-detail cursor wrapper is missing")
+  local cursorX
+  debug.setupvalue(cursorWrapper, originalCursorIndex, function(x)
+    cursorX = x
+  end)
+  SummaryChrome.drawMoveSelectionCursor(120, 18, false)
+  debug.setupvalue(cursorWrapper, originalCursorIndex, originalCursor)
+  assert(cursorX == 0, "RR move-detail cursor stayed on the right pane")
+  SummaryMenu._page = oldPage
+
+  local PartyChrome = require("src.ui.game3.party_chrome")
+  PartyChrome.install(nil)
+  assert(PartyChrome._manifest.slotMainW == 112
+      and PartyChrome._manifest.slotMainH == 40
+      and PartyChrome._manifest.slotWideW == 112
+      and PartyChrome._manifest.slotWideH == 40,
+    "RR party-card chrome retained FireRed dimensions")
+
+  local PartyMenu = require("src.ui.game3.party_menu")
+  local windows = assert(PartyMenu.__rrBwGridWindows)
+  assert(windows[1].left == 1 and windows[1].top == 0
+      and windows[1].w == 14 and windows[1].h == 5
+      and windows[2].left == 15 and windows[2].top == 1
+      and windows[5].left == 1 and windows[5].top == 10,
+    "RR party windows retained FireRed geometry")
+  local sprites = assert(PartyMenu.__rrBwGridSprites)
+  assert(sprites[1][1] == 34 and sprites[1][2] == 12
+      and sprites[6][1] == 146 and sprites[6][2] == 100,
+    "RR party icons retained FireRed positions")
+  local textX1, textY1 = PartyMenu.__rrBwGridText(1, "nick")
+  local textX2, textY2 = PartyMenu.__rrBwGridText(2, "nick")
+  local textX3, textY3 = PartyMenu.__rrBwGridText(3, "nick")
+  assert(textX1 == 38 and textY1 == 3
+      and textX2 == 160 and textY2 == 13
+      and textX3 == 38 and textY3 == 43,
+    "RR party text did not alternate between left/right card layouts")
+
+  -- Exercise the sandbox-safe public-function remapper that surrounds the
+  -- stock renderer. This catches a release that reports the right constants
+  -- but still sends FireRed positions to the actual chrome/font/OAM APIs.
+  local partyWrapper = PartyMenu.draw
+  local stockDraw, stockDrawIndex
+  for index = 1, 32 do
+    local name, value = debug.getupvalue(partyWrapper, index)
+    if not name then break end
+    if name == "originalDraw" then
+      stockDraw, stockDrawIndex = value, index
+      break
+    end
+  end
+  assert(stockDrawIndex, "RR party-grid draw wrapper is missing")
+  local TestPartyChrome = require("src.ui.game3.party_chrome")
+  local TestFont = require("src.ui.game3.frlg_font")
+  local TestOam = require("src.core.game3.oam")
+  local realSlotDraw, realFontDraw = TestPartyChrome.drawSlot, TestFont.draw
+  local realSetPos, realRectangle = TestOam.setPos, love.graphics.rectangle
+  local seen = {}
+  TestPartyChrome.drawSlot = function(_, left, top)
+    seen.slot = { left, top }
+  end
+  TestFont.draw = function(_, x, y) seen.text = { x, y } end
+  TestOam.setPos = function(_, x, y) seen.sprite = { x, y } end
+  love.graphics.rectangle = function(_, x, y) seen.bar = { x, y } end
+  debug.setupvalue(partyWrapper, stockDrawIndex, function()
+    TestPartyChrome.drawSlot("main", 1, 3, false, false, false)
+    TestFont.draw("NAME", 32, 35, {})
+    TestOam.setPos(1, 16, 40)
+    love.graphics.rectangle("fill", 32, 59, 24, 3)
+  end)
+  local oldLayout = PartyMenu._layout
+  PartyMenu._layout = "single"
+  local okPartyDraw, partyDrawErr = pcall(partyWrapper)
+  PartyMenu._layout = oldLayout
+  debug.setupvalue(partyWrapper, stockDrawIndex, stockDraw)
+  TestPartyChrome.drawSlot, TestFont.draw = realSlotDraw, realFontDraw
+  TestOam.setPos, love.graphics.rectangle = realSetPos, realRectangle
+  assert(okPartyDraw, "RR party-grid remapper failed: " .. tostring(partyDrawErr))
+  assert(seen.slot[1] == 1 and seen.slot[2] == 0
+      and seen.text[1] == 38 and seen.text[2] == 3
+      and seen.sprite[1] == 34 and seen.sprite[2] == 12
+      and seen.bar[1] == 72 and seen.bar[2] == 18,
+    "RR party-grid remapper still emitted FireRed draw coordinates")
+end
 
 -- RR's live wild resolver uses relocated day/night tables. The FireRed
 -- fallback has intentional SPECIES_NONE placeholders for city grass; those
@@ -984,6 +1110,34 @@ do
   Flags.setFlag(Space.store, nil, 0x940, true)
   local expectedSpecies = poolU16(0x1163B98,
     Rng.mulU32(fullId, 1) % exports.randomizerReport.speciesPool)
+
+  -- The ROM script has already selected each of these party records from the
+  -- player's starter/region branch. The randomizer hook must pass the exact
+  -- table through, including explicit competitive moves and held items.
+  for _, identity in ipairs({
+    { 81, 326 }, -- opening Kanto rival
+    { 89, 332 }, -- later Kanto rival branch
+    { 1, 44 },   -- Brendan
+    { 90, 438 }, -- Champion rival branch
+  }) do
+    local rivalParty = { {
+      species = 7, speciesId = 7, level = 5, heldItem = 13,
+      moves = { "TACKLE" }, moveIds = { 33 },
+    } }
+    local passed = loader.hooks:call("trainer.party",
+      function(_, _, party) return party end,
+      identity[1], identity[2], rivalParty)
+    assert(passed == rivalParty and passed[1].speciesId == 7
+        and passed[1].moveIds[1] == 33 and passed[1].heldItem == 13,
+      "starter/region rival party was randomized after ROM branch selection")
+  end
+  local ordinaryParty = { { species = 1, speciesId = 1, level = 5 } }
+  local randomizedTrainer = loader.hooks:call("trainer.party",
+    function(_, _, party) return party end, 1, 19, ordinaryParty)
+  assert(randomizedTrainer ~= ordinaryParty
+      and randomizedTrainer[1].speciesId == expectedSpecies,
+    "ordinary trainer stopped using the enabled species randomizer")
+
   local scratch = setmetatable({ party = {}, dex = { seen = {}, owned = {}, caught = {} } },
     { __index = session })
   local gave, _, generated = Party.giveMon(scratch, 1, 5)

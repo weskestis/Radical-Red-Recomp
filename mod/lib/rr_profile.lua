@@ -17,7 +17,7 @@ local Profile = {
   -- Bump whenever the private-ROM cache layout or a decoded RR structure
   -- changes.  A mismatched marker makes the mod rebuild from the player's
   -- validated import instead of ever mixing old/vanilla cache data.
-  CACHE_SCHEMA = 14,
+  CACHE_SCHEMA = 15,
 
   SPECIES_COUNT = 1376,
   MOVE_COUNT = 1004,
@@ -102,6 +102,12 @@ Profile.OFFSET = {
   -- address (0x38A428) is erased to 0xFF in v4.1, which decodes as the solid
   -- black rectangle previously shown on the rival-name screen.
   namingRivalGfx = 0x0EE82B0,
+
+  -- RR's Black/White-style party cards are 14x5 tiles. FireRed's stock
+  -- extractor otherwise interprets these bytes as one 10x7 and one 18x3
+  -- panel, producing the stretched/overlapping party screen.
+  partyMenuSlotTilemap = 0x045A180,
+  partyMenuSlotEmptyTilemap = 0x045A210,
 }
 
 local function copy(t)
@@ -227,6 +233,10 @@ function Profile.apply(Versions)
   Versions.PARTY_MENU_BG_TILEMAP = 0x0E82A98
   Versions.PARTY_MENU_BALL_GFX = 0x0E82BE0
   Versions.PARTY_MENU_BALL_PAL = 0x0E82E7C
+  Versions.PARTY_MENU_SLOT_MAIN_TILEMAP = Profile.OFFSET.partyMenuSlotTilemap
+  Versions.PARTY_MENU_SLOT_WIDE_TILEMAP = Profile.OFFSET.partyMenuSlotTilemap
+  Versions.PARTY_MENU_SLOT_WIDE_EMPTY_TILEMAP =
+    Profile.OFFSET.partyMenuSlotEmptyTilemap
   Versions.SUMMARY_STATUS_ICONS_GFX = 0x1327888
 
   Versions.SUMMARY_BG_GFX = 0x0E9A460

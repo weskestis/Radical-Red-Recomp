@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.5.15 — Rival identity and Black/White-style menu repair
+
+- Preserve every starter/region-dependent rival party after Radical Red's
+  cartridge script selects it. Kanto rival classes, Brendan/May encounters,
+  and both Champion trios now bypass the host trainer randomizer without
+  disabling randomization for ordinary trainers.
+- Rebuild the party-card chrome as Radical Red's 14×5-tile panels and remap
+  all six windows, Pokémon/item/status/ball sprites, labels, HP values, and HP
+  bars to the ROM's two-column Black/White-style grid.
+- Swap the Known Moves detail layout to Radical Red's intended arrangement:
+  move rows and cursor on the left, Pokémon header/types and selected-move
+  stats/description on the right. Ordinary summary pages keep their original
+  coordinates.
+- Verify species `0x04FF` against the ROM as Ghost/Fighting Seviian Ursaring.
+  Its unusual turquoise multi-armed art is intentional, so the extracted
+  front/back sprites and palettes remain unchanged.
+- Bump the private cache schema to 15 and add exact-loader regressions for the
+  party assets, live menu-coordinate transforms, all rival exemptions, and
+  the Seviian-form sentinel.
+
 ## 0.5.14 — Functional DexNav and Roost text repair
 
 - Replace the display-only current-area DexNav with working Register, Scan,

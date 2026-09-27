@@ -35,6 +35,7 @@ local moduleSources = {
         portableOptionsDraw=true, gameModesChoiceDraw=true,
         portableChoiceDraw=true, gameModesFadeGuard=true,
         setupMessageFadeGuard=true,
+        summaryDetailLayout=true, partyGridLayout=true,
         expandedGraphicsIds=true, expandedGraphicsTables=true,
         objectGraphicsSelector=true }
     end,
@@ -66,7 +67,8 @@ local moduleSources = {
     _G.__rrInstalled.mechanics=true; return { nativeCallbacks=22 }
   end }]],
   ["lib/rr_randomizer.lua"] = [[return { install=function()
-    _G.__rrInstalled.randomizer=true; return { cartridgeSetup=true }
+    _G.__rrInstalled.randomizer=true
+    return { cartridgeSetup=true, fixedRivals=true }
   end }]],
   ["lib/rr_facilities.lua"] = [[return { install=function()
     _G.__rrInstalled.facilities=true; return { nativeCallbacks=10 }
@@ -154,12 +156,15 @@ assert(mod.exports.visualReport.gameModesChoiceDraw == true)
 assert(mod.exports.visualReport.portableChoiceDraw == true)
 assert(mod.exports.visualReport.gameModesFadeGuard == true)
 assert(mod.exports.visualReport.setupMessageFadeGuard == true)
+assert(mod.exports.visualReport.summaryDetailLayout == true)
+assert(mod.exports.visualReport.partyGridLayout == true)
 assert(mod.exports.visualReport.expandedGraphicsIds == true)
 assert(mod.exports.visualReport.expandedGraphicsTables == true)
 assert(mod.exports.visualReport.objectGraphicsSelector == true)
 assert(mod.exports.visualReport.paletteCount == 451)
 assert(mod.exports.visualReport.spriteCount == 545)
 assert(mod.exports.visualReport.usedPaletteCount == 397)
+assert(mod.exports.randomizerReport.fixedRivals == true)
 assert(type(ready) == "function")
 
 ready({ game = game })

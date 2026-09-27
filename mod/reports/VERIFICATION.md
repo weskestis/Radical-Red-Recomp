@@ -1,4 +1,4 @@
-# Verification report — Radical Red 0.5.14
+# Verification report — Radical Red 0.5.15
 
 This report records the release-candidate gate run against the exact Radical
 Red v4.1 ROM. Private ROM bytes and generated assets are not part of the mod
@@ -22,6 +22,7 @@ package.
 | Woyaopp Viridian service and SO2Toxic item branches | PASS |
 | Live party-menu slot-two Combee gender change | PASS |
 | Region-selected starter is preserved with species randomization active | PASS |
+| Kanto rival, Brendan/May, and Champion branch parties stay fixed | PASS |
 | Normal/scaled species, ability, and learnset mappings | PASS |
 | Stock gen1recomp 0.3.5 and 0.3.20 loaders | PASS |
 | Android ROM readers using strings, numeric byte arrays, or `get` | PASS |
@@ -44,6 +45,9 @@ package.
 | Pokémon, trainer, item, interface, field-effect, and all RGBA assets | PASS — 9,530 audited |
 | Rock Smash field effect sourced from live RR graphics ID 96 | PASS |
 | Relocated rival naming sheet and all nine live frame-table entries | PASS |
+| RR six-card party chrome, icon, text, and HP-bar geometry | PASS |
+| RR Known Moves detail panes and selection cursor geometry | PASS |
+| Seviian Ursaring species/form identity preserved | PASS |
 | Actual Game Modes list clears active and completed black fade veils | PASS |
 | Authentic Game Modes renderer on normal frames | PASS |
 | Portable Game Modes fallback after forced chrome failure | PASS |

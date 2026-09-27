@@ -29,6 +29,188 @@ local EXPECTED_GRAPHICS = {
     palette = 0x12F3, width = 16, height = 32 },
 }
 
+-- RR's Black/White-style party screen replaces FireRed's one large card plus
+-- five narrow rows with a two-column 14x5-tile grid. These records are read
+-- directly from the v4.1 ROM's sPartyMenu* tables (0x459EC4..0x45A03F).
+local RR_PARTY_WINDOWS = {
+  { left = 1,  top = 0,  w = 14, h = 5, kind = "main" },
+  { left = 15, top = 1,  w = 14, h = 5, kind = "wide" },
+  { left = 1,  top = 5,  w = 14, h = 5, kind = "wide" },
+  { left = 15, top = 6,  w = 14, h = 5, kind = "wide" },
+  { left = 1,  top = 10, w = 14, h = 5, kind = "wide" },
+  { left = 15, top = 11, w = 14, h = 5, kind = "wide" },
+}
+
+local RR_PARTY_SPRITES = {
+  { 34,  12,  34,  24,  26,  33,  24,  16 },
+  { 146, 20, 146,  32, 138,  41, 136,  24 },
+  { 34,  52,  34,  64,  26,  73,  24,  56 },
+  { 146, 60, 146,  72, 138,  81, 136,  64 },
+  { 34,  92,  34, 104,  26, 113,  24,  96 },
+  { 146,100, 146, 112, 138, 121, 136, 104 },
+}
+
+local RR_PARTY_INFO_LEFT = {
+  nick = { 30, 3 }, level = { 80, 3 }, gender = { 30, 12 },
+  hp = { 56, 19 }, hpMax = { 80, 19 }, hpBar = { 64, 18 },
+  desc = { 56, 17 },
+}
+
+local RR_PARTY_INFO_RIGHT = {
+  nick = { 40, 5 }, level = { 5, 25 }, gender = { 98, 5 },
+  hp = { 59, 25 }, hpMax = { 74, 25 }, hpBar = { 56, 22 },
+  desc = { 40, 25 },
+}
+
+local function copyRecord(source)
+  local out = {}
+  for key, value in pairs(source or {}) do out[key] = value end
+  return out
+end
+
+local FR_PARTY_WINDOWS = {
+  single = {
+    { left = 1, top = 3 }, { left = 12, top = 1 },
+    { left = 12, top = 4 }, { left = 12, top = 7 },
+    { left = 12, top = 10 }, { left = 12, top = 13 },
+  },
+  double = {
+    { left = 1, top = 1 }, { left = 1, top = 8 },
+    { left = 12, top = 1 }, { left = 12, top = 5 },
+    { left = 12, top = 9 }, { left = 12, top = 13 },
+  },
+}
+
+local FR_PARTY_SPRITES = {
+  single = {
+    { 16, 40, 20, 50, 56, 52, 16, 34 },
+    { 104, 18, 108, 28, 144, 27, 102, 25 },
+    { 104, 42, 108, 52, 144, 51, 102, 49 },
+    { 104, 66, 108, 76, 144, 75, 102, 73 },
+    { 104, 90, 108, 100, 144, 99, 102, 97 },
+    { 104, 114, 108, 124, 144, 123, 102, 121 },
+  },
+  double = {
+    { 16, 24, 20, 34, 56, 36, 16, 18 },
+    { 16, 80, 20, 90, 56, 92, 16, 74 },
+    { 104, 18, 108, 28, 144, 27, 102, 25 },
+    { 104, 50, 108, 60, 144, 59, 102, 57 },
+    { 104, 82, 108, 92, 144, 91, 102, 89 },
+    { 104, 114, 108, 124, 144, 123, 102, 121 },
+  },
+}
+
+local FR_PARTY_INFO_LEFT = {
+  nick = { 24, 11 }, level = { 32, 20 }, gender = { 64, 20 },
+  hp = { 38, 36 }, hpMax = { 53, 36 }, hpBar = { 24, 35 },
+  desc = { 12, 34 },
+}
+
+local FR_PARTY_INFO_RIGHT = {
+  nick = { 22, 3 }, level = { 32, 12 }, gender = { 64, 12 },
+  hp = { 102, 12 }, hpMax = { 117, 12 }, hpBar = { 88, 10 },
+  desc = { 77, 4 },
+}
+
+local PARTY_INFO_KEYS = {
+  "nick", "level", "gender", "hp", "hpMax", "hpBar", "desc",
+}
+
+local function bufferLength(buffer)
+  if type(buffer) == "string" then return #buffer end
+  if type(buffer) == "table" then return buffer._len or #buffer end
+  return 0
+end
+
+local function bufferByte(buffer, index)
+  if type(buffer) == "string" then return buffer:byte(index) or 0 end
+  return (buffer and buffer[index]) or 0
+end
+
+local function bgr555Rgb(color)
+  color = (tonumber(color) or 0) % 0x8000
+  local r = color % 32
+  local g = math.floor(color / 32) % 32
+  local b = math.floor(color / 1024) % 32
+  return math.floor(r * 255 / 31 + 0.5),
+    math.floor(g * 255 / 31 + 0.5),
+    math.floor(b * 255 / 31 + 0.5)
+end
+
+local function partyPaletteBanks(bytes)
+  local banks = {}
+  for bank = 0, math.floor(bufferLength(bytes) / 32) - 1 do
+    local colors = {}
+    for color = 0, 15 do
+      local index = bank * 32 + color * 2 + 1
+      colors[color] = bufferByte(bytes, index)
+        + bufferByte(bytes, index + 1) * 0x100
+    end
+    banks[bank] = colors
+  end
+  return banks
+end
+
+
+local function rrPartyPalette(palBytes, selected, multi)
+  local banks = partyPaletteBanks(palBytes)
+  local base = banks[3] or banks[0] or {}
+  local palette = {}
+  for index = 0, 15 do palette[index] = base[index] or 0 end
+  local function color(id)
+    local bank, index = math.floor(id / 16), id % 16
+    return (banks[bank] and banks[bank][index]) or 0
+  end
+  if multi and selected then
+    palette[4], palette[5], palette[6] = color(132), color(133), color(134)
+    palette[1], palette[7], palette[8] = color(97), color(103), color(104)
+  elseif multi then
+    palette[4], palette[5], palette[6] = color(68), color(69), color(70)
+    palette[1], palette[7], palette[8] = color(65), color(71), color(72)
+  elseif selected then
+    palette[4], palette[5], palette[6] = color(116), color(117), color(118)
+    palette[1], palette[7], palette[8] = color(97), color(103), color(104)
+  else
+    palette[4], palette[5], palette[6] = color(52), color(53), color(54)
+    palette[1], palette[7], palette[8] = color(49), color(55), color(56)
+  end
+  return palette
+end
+
+local function rrBakePartySlot(gfx, tilemap, palette)
+  local width, height = 112, 40
+  local pixels = {}
+  for index = 1, width * height do pixels[index] = 0 end
+  local tileCount = math.floor(bufferLength(gfx) / 32)
+  for tileY = 0, 4 do
+    for tileX = 0, 13 do
+      local tileId = tilemap:byte(tileY * 14 + tileX + 1) or 0
+      if tileId >= tileCount then tileId = 0 end
+      local base = tileId * 32
+      for row = 0, 7 do
+        for pair = 0, 3 do
+          local byte = bufferByte(gfx, base + row * 4 + pair + 1)
+          local x = tileX * 8 + pair * 2
+          local y = tileY * 8 + row
+          pixels[y * width + x + 1] = byte % 16
+          pixels[y * width + x + 2] = math.floor(byte / 16) % 16
+        end
+      end
+    end
+  end
+  local rgba = {}
+  for index = 1, width * height do
+    local colorIndex = pixels[index] or 0
+    if colorIndex == 0 then
+      rgba[index] = string.char(0, 0, 0, 0)
+    else
+      local r, g, b = bgr555Rgb(palette[colorIndex] or 0)
+      rgba[index] = string.char(r, g, b, 255)
+    end
+  end
+  return table.concat(rgba)
+end
+
 local function graphicsTables(Profile)
   return {
     [0] = {
@@ -231,9 +413,94 @@ local function installExpandedOwExtraction(Profile)
   OwExtract.__rrExpandedGraphicsTablesPatch = true
 end
 
+local function installPartyChromeExtraction(Profile)
+  local PartyExtract = require("src.import.gba.party_chrome_extract")
+  if PartyExtract.__rrBwGridPatch then return end
+
+  local original = assert(PartyExtract.run)
+  local Lz77 = require("src.import.gba.lz77")
+  local Versions = require("src.import.gba.versions")
+
+  PartyExtract.run = function(rom, cache, opts)
+    local report = original(rom, cache, opts)
+    local root = assert(report and report.root,
+      "Radical Red party chrome extraction root is missing")
+    local function get(offset) return rom:get(offset) end
+    local gfx = assert(Lz77.decompress(get, Versions.PARTY_MENU_BG_GFX),
+      "Radical Red party chrome graphics failed to decompress")
+    local pal = assert(Lz77.decompress(get, Versions.PARTY_MENU_BG_PAL),
+      "Radical Red party chrome palette failed to decompress")
+
+    local function raw(offset, length)
+      local bytes = {}
+      for index = 0, length - 1 do
+        bytes[index + 1] = string.char(get(offset + index))
+      end
+      return table.concat(bytes)
+    end
+
+    -- Both filled shapes use the same 14x5 RR tilemap. The separate filenames
+    -- are retained because PartyChrome's public contract distinguishes the
+    -- first slot from later/empty slots.
+    local filled = raw(Profile.OFFSET.partyMenuSlotTilemap, 14 * 5)
+    local empty = raw(Profile.OFFSET.partyMenuSlotEmptyTilemap, 14 * 5)
+    local palettes = {
+      normal = rrPartyPalette(pal, false),
+      selected = rrPartyPalette(pal, true),
+      multi = rrPartyPalette(pal, false, true),
+      multiSelected = rrPartyPalette(pal, true, true),
+    }
+    local function writeSlot(filename, tilemap, palette)
+      local rgba = rrBakePartySlot(gfx, tilemap, palette)
+      assert(type(rgba) == "string" and #rgba == 112 * 40 * 4,
+        "Radical Red party slot chrome has the wrong dimensions")
+      local ok, err = cache:write(root .. "/" .. filename, rgba)
+      assert(ok ~= false and ok ~= nil,
+        "could not write Radical Red party chrome: " .. tostring(err))
+    end
+
+    for _, kind in ipairs({ "main", "wide" }) do
+      writeSlot("slot_" .. kind .. ".rgba", filled, palettes.normal)
+      writeSlot("slot_" .. kind .. "_selected.rgba", filled,
+        palettes.selected)
+      writeSlot("slot_" .. kind .. "_multi.rgba", filled,
+        palettes.multi)
+      writeSlot("slot_" .. kind .. "_multi_selected.rgba", filled,
+        palettes.multiSelected)
+    end
+    writeSlot("slot_wide_empty.rgba", empty, palettes.normal)
+
+    local manifest = string.format([[
+return {
+  width = %d, height = %d,
+  ballW = %d, ballSheetH = %d, ballFrames = %d,
+  slotMainW = 112, slotMainH = 40,
+  slotWideW = 112, slotWideH = 40,
+  cancelButtonW = 56, cancelButtonH = 16,
+  holdIconW = %d, holdIconSheetH = %d, holdIconFrames = %d,
+  pokemonVersion = %d,
+}
+]], report.width, report.height, report.ballW, report.ballSheetH,
+      report.ballFrames or 2, report.holdIconW, report.holdIconSheetH,
+      report.holdIconFrames, Versions.POKEMON_VERSION or 1)
+    local ok, err = cache:write(root .. "/manifest.lua", manifest)
+    assert(ok ~= false and ok ~= nil,
+      "could not write Radical Red party manifest: " .. tostring(err))
+
+    report.slotMainW, report.slotMainH = 112, 40
+    report.slotWideW, report.slotWideH = 112, 40
+    report.rrGrid = true
+    return report
+  end
+
+  PartyExtract.__rrBwGridOriginal = original
+  PartyExtract.__rrBwGridPatch = true
+end
+
 function Visuals.installExtraction(Profile)
   installExpandedMapGraphics(Profile)
   installExpandedOwExtraction(Profile)
+  installPartyChromeExtraction(Profile)
   local OwExtract = require("src.import.gba.ow_extract")
   if not OwExtract.__rrPaletteCountPatch then
     local original = assert(OwExtract.loadPaletteTable)
@@ -481,7 +748,223 @@ local function clearStaleBlackVeil(owner)
   return cleared
 end
 
+local function shiftedCoord(source, dx, dy)
+  local out = copyRecord(source)
+  out.x = (tonumber(out.x) or 0) + (dx or 0)
+  out.y = (tonumber(out.y) or 0) + (dy or 0)
+  return out
+end
+
+local function installSummaryDetailLayout()
+  local SummaryMenu = require("src.ui.game3.summary_menu")
+  local SummaryChrome = require("src.ui.game3.summary_chrome")
+  if SummaryChrome.__rrBwDetailPatch then return end
+
+  local originalManifest = assert(SummaryChrome.manifest)
+  local function rrManifest()
+    local base = originalManifest()
+    if SummaryMenu._page ~= SummaryMenu.PAGE_MOVES_INFO or not base then
+      return base
+    end
+    if SummaryChrome.__rrBwDetailBase == base
+        and SummaryChrome.__rrBwDetailManifest then
+      return SummaryChrome.__rrBwDetailManifest
+    end
+
+    local derived = copyRecord(base)
+    derived.coords = copyRecord(base.coords)
+    for _, key in ipairs({
+      "level", "name", "gender", "statusMovesInfo",
+      "shinyStarMovesInfo", "pokerus", "monIcon",
+      "movesInfoType1", "movesInfoType2",
+    }) do
+      if base.coords and base.coords[key] then
+        derived.coords[key] = shiftedCoord(base.coords[key], 120, 0)
+      end
+    end
+
+    derived.moveSlots = {}
+    for index = 1, 4 do
+      local source = base.moveSlots and base.moveSlots[index] or {
+        nameX = 163, nameY = 21 + (index - 1) * 28,
+        typeX = 123, typeY = 21 + (index - 1) * 28,
+        ppX = 196, ppY = 32 + (index - 1) * 28,
+      }
+      local slot = copyRecord(source)
+      slot.nameX = (tonumber(slot.nameX) or 163) - 120
+      slot.typeX = (tonumber(slot.typeX) or 123) - 120
+      slot.ppX = (tonumber(slot.ppX) or 196) - 120
+      derived.moveSlots[index] = slot
+    end
+    derived.moveSlots[5] = {
+      nameX = 43, nameY = 133,
+      typeX = 3, typeY = 133,
+      ppX = 76, ppY = 144,
+    }
+
+    derived.movesInfo = copyRecord(base.movesInfo)
+    for _, key in ipairs({ "power", "accuracy", "desc" }) do
+      if base.movesInfo and base.movesInfo[key] then
+        derived.movesInfo[key] = shiftedCoord(base.movesInfo[key], 120, 0)
+      end
+    end
+
+    SummaryChrome.__rrBwDetailBase = base
+    SummaryChrome.__rrBwDetailManifest = derived
+    return derived
+  end
+  SummaryChrome.__rrBwDetailManifestOriginal = originalManifest
+  SummaryChrome.manifest = rrManifest
+
+  local originalCursor = assert(SummaryChrome.drawMoveSelectionCursor)
+  SummaryChrome.drawMoveSelectionCursor = function(x, y, w, h, isBlue)
+    if SummaryMenu._page == SummaryMenu.PAGE_MOVES_INFO and x == 120 then
+      x = 0
+    end
+    return originalCursor(x, y, w, h, isBlue)
+  end
+  SummaryChrome.__rrBwDetailCursorOriginal = originalCursor
+  SummaryChrome.__rrBwDetailPatch = true
+end
+
+local function installPartyGridLayout()
+  local PartyMenu = require("src.ui.game3.party_menu")
+  if PartyMenu.__rrBwGridPatch then return end
+
+  local PartyChrome = require("src.ui.game3.party_chrome")
+  local FrlgFont = require("src.ui.game3.frlg_font")
+  local Window = require("src.ui.game3.window")
+  local Oam = require("src.core.game3.oam")
+  local originalDraw = assert(PartyMenu.draw)
+
+  local function layoutName()
+    return PartyMenu._layout == "double" and "double" or "single"
+  end
+
+  local function sourceInfo(layout, index)
+    if index == 1 or (layout == "double" and index == 2) then
+      return FR_PARTY_INFO_LEFT
+    end
+    return FR_PARTY_INFO_RIGHT
+  end
+
+  local function targetInfo(index)
+    return index % 2 == 1 and RR_PARTY_INFO_LEFT or RR_PARTY_INFO_RIGHT
+  end
+
+  local function windowIndex(layout, left, top)
+    for index, win in ipairs(FR_PARTY_WINDOWS[layout]) do
+      if win.left == left and win.top == top then return index end
+    end
+    return nil
+  end
+
+  local function remapSprite(layout, x, y)
+    local source = FR_PARTY_SPRITES[layout]
+    for index = 1, 6 do
+      for pair = 1, 7, 2 do
+        if source[index][pair] == x and source[index][pair + 1] == y then
+          return RR_PARTY_SPRITES[index][pair],
+            RR_PARTY_SPRITES[index][pair + 1]
+        end
+      end
+    end
+    return x, y
+  end
+
+  local function remapText(layout, index, x, y)
+    local sourceWin = FR_PARTY_WINDOWS[layout][index]
+    local targetWin = RR_PARTY_WINDOWS[index]
+    local from, to = sourceInfo(layout, index), targetInfo(index)
+    for _, key in ipairs(PARTY_INFO_KEYS) do
+      local source, target = from[key], to[key]
+      local sourceX = sourceWin.left * 8 + source[1]
+      local sourceY = sourceWin.top * 8 + source[2]
+      if x == sourceX and y == sourceY then
+        return targetWin.left * 8 + target[1],
+          targetWin.top * 8 + target[2]
+      end
+    end
+    return x, y
+  end
+
+  local function drawParty(...)
+    local layout = layoutName()
+    local currentSlot
+    local originalDrawSlot = PartyChrome.drawSlot
+    local originalFontDraw = FrlgFont.draw
+    local originalStdFrame = Window.stdFrame
+    local originalCreateSprite = Oam.createSprite
+    local originalSetPos = Oam.setPos
+    local graphics = love and love.graphics
+    local originalRectangle = graphics and graphics.rectangle
+
+    PartyChrome.drawSlot = function(kind, left, top, selected, hideHp, multi)
+      local index = windowIndex(layout, left, top)
+      currentSlot = index
+      if index then
+        local target = RR_PARTY_WINDOWS[index]
+        left, top = target.left, target.top
+      end
+      return originalDrawSlot(kind, left, top, selected, hideHp, multi)
+    end
+
+    FrlgFont.draw = function(text, x, y, opts)
+      if currentSlot then x, y = remapText(layout, currentSlot, x, y) end
+      return originalFontDraw(text, x, y, opts)
+    end
+
+    Window.stdFrame = function(...)
+      -- Slot drawing is complete once a normal framed overlay/prompt begins.
+      currentSlot = nil
+      return originalStdFrame(...)
+    end
+
+    Oam.createSprite = function(template, x, y, subpriority)
+      x, y = remapSprite(layout, x, y)
+      return originalCreateSprite(template, x, y, subpriority)
+    end
+    Oam.setPos = function(id, x, y)
+      x, y = remapSprite(layout, x, y)
+      return originalSetPos(id, x, y)
+    end
+
+    if originalRectangle then
+      graphics.rectangle = function(mode, x, y, w, h, ...)
+        if currentSlot and mode == "fill" and h == 3 then
+          x, y = remapText(layout, currentSlot, x, y)
+        end
+        return originalRectangle(mode, x, y, w, h, ...)
+      end
+    end
+
+    local result = { pcall(originalDraw, ...) }
+    PartyChrome.drawSlot = originalDrawSlot
+    FrlgFont.draw = originalFontDraw
+    Window.stdFrame = originalStdFrame
+    Oam.createSprite = originalCreateSprite
+    Oam.setPos = originalSetPos
+    if originalRectangle then graphics.rectangle = originalRectangle end
+    if not result[1] then error(result[2], 0) end
+    return unpack(result, 2)
+  end
+
+  PartyMenu.__rrBwGridOriginal = originalDraw
+  PartyMenu.__rrBwGridWrapper = drawParty
+  PartyMenu.draw = drawParty
+  PartyMenu.__rrBwGridWindows = RR_PARTY_WINDOWS
+  PartyMenu.__rrBwGridSprites = RR_PARTY_SPRITES
+  PartyMenu.__rrBwGridText = function(index, key)
+    local win = assert(RR_PARTY_WINDOWS[index])
+    local info = assert(targetInfo(index)[key])
+    return win.left * 8 + info[1], win.top * 8 + info[2]
+  end
+  PartyMenu.__rrBwGridPatch = true
+end
+
 function Visuals.installRuntime(Profile)
+  installSummaryDetailLayout()
+  installPartyGridLayout()
   local OptionMenu = require("src.ui.game3.option_menu")
   if not (OptionMenu.__rrOptionsDrawWrapper
       and OptionMenu.draw == OptionMenu.__rrOptionsDrawWrapper) then
@@ -642,6 +1125,8 @@ function Visuals.installRuntime(Profile)
     portableChoiceDraw = true,
     gameModesFadeGuard = true,
     setupMessageFadeGuard = true,
+    summaryDetailLayout = true,
+    partyGridLayout = true,
     expandedGraphicsIds = true,
     expandedGraphicsTables = true,
     objectGraphicsSelector = true,

@@ -38,6 +38,38 @@ local ROM = {
   MOVE_RESTRICTED = 0x116221A,
 }
 
+-- Radical Red deliberately supplies several rival records for the same
+-- encounter.  Its map script selects the record that matches the player's
+-- chosen starter/region; applying the host trainer hook afterwards used to
+-- erase that choice by randomizing the selected party a second time.
+--
+-- Classes 81 and 89 contain only the branching Kanto-rival records in v4.1.
+-- Brendan and May share the generic Pokemon Trainer class, so their exact
+-- trainer ids are listed.  The two Champion trios are the final rival's
+-- starter-dependent parties and must remain paired with that branch too.
+local FIXED_RIVAL_CLASSES = {
+  [81] = true,
+  [89] = true,
+}
+
+local FIXED_RIVAL_IDS = {
+  [26] = true,  -- Brendan, postgame
+  [44] = true,  -- Brendan, S.S. Anne
+  [50] = true,  -- Brendan, Fuchsia
+  [55] = true,  -- Brendan, Route 23
+  [57] = true,  -- Brendan, late game
+  [61] = true,  -- May
+  [438] = true, [439] = true, [440] = true, -- Champion branches
+  [739] = true, [740] = true, [741] = true, -- rematch branches
+}
+
+local function isFixedRival(trainerClass, trainerId)
+  trainerClass = math.floor(tonumber(trainerClass) or -1)
+  trainerId = math.floor(tonumber(trainerId) or -1)
+  return FIXED_RIVAL_CLASSES[trainerClass] == true
+    or FIXED_RIVAL_IDS[trainerId] == true
+end
+
 local U32 = 4294967296
 
 local function u16(bytes, offset)
@@ -291,6 +323,12 @@ local function installTrainerHook(mod, pools)
     if type(party) ~= "table" then
       return next(trainerClass, trainerId, party)
     end
+    -- The cartridge has already selected the rival party for the active
+    -- starter/region branch. Preserve its species, explicit moves, items, and
+    -- abilities even when one or more randomizer modes are enabled.
+    if isFixedRival(trainerClass, trainerId) then
+      return next(trainerClass, trainerId, party)
+    end
     local mode = speciesMode()
     local learnsetMode = randomizersEnabled() and flagOn(FLAG.LEARNSET)
     local abilityMode = randomizersEnabled() and flagOn(FLAG.ABILITY)
@@ -342,6 +380,9 @@ function Randomizer.install(mod, rom)
     abilities = true,
     learnsets = true,
     regionalStarterPreserved = true,
+    fixedRivals = true,
+    fixedRivalClasses = 2,
+    fixedRivalIds = 12,
     speciesPool = #pools.species.full,
     scaledPool = #pools.species.none,
     abilityPool = #pools.abilityDefault,
@@ -356,5 +397,8 @@ Randomizer.trainerId32 = trainerId32
 Randomizer.randomizeSpecies = randomizeSpecies
 Randomizer.randomizeAbility = randomizeAbility
 Randomizer.randomizeMove = randomizeMove
+Randomizer.isFixedRival = isFixedRival
+Randomizer.FIXED_RIVAL_CLASSES = FIXED_RIVAL_CLASSES
+Randomizer.FIXED_RIVAL_IDS = FIXED_RIVAL_IDS
 
 return Randomizer

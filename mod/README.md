@@ -1,6 +1,6 @@
 # Radical Red
 
-Radical Red 0.5.14 is a FireRed-only runtime total conversion for unmodified
+Radical Red 0.5.15 is a FireRed-only runtime total conversion for unmodified
 gen1recomp 0.3.5 and 0.3.20. It validates the player's own Pokémon Radical Red
 v4.1 ROM, builds a private cache on first start, and mounts that data as the
 active game. No launcher, executable, APK, or engine file is modified.
@@ -28,7 +28,9 @@ not overwrite each other's saves.
   exact difficulty, Minimal Grinding Mode, species/ability/learnset randomizer,
   and normal/scaled species choices;
 - the original trainer-ID-seeded species, ability, and learnset randomizer
-  mappings, using the candidate pools embedded in the player's v4.1 ROM;
+  mappings, using the candidate pools embedded in the player's v4.1 ROM,
+  while preserving every starter/region-dependent rival party selected by
+  the cartridge;
 - all 72 native callbacks referenced by the v4.1 script set, including level
   caps, random starters/eggs, followers, facilities, and story utilities;
 - running shoes from the first step, plus the original bedroom-console codes:
@@ -76,7 +78,7 @@ The first start opens the game, displays live conversion progress, and keeps
 Android responsive while the bounded ROM reader and staged extractor do their
 work. Interrupted cache work is safely resumed. If a conversion step fails,
 the exact stage and error remain visible instead of silently returning to the
-launcher. Version 0.5.14 negotiates the string, numeric byte-array, and
+launcher. Version 0.5.15 negotiates the string, numeric byte-array, and
 byte-at-a-time ROM-reader interfaces found across supported Android payloads.
 Its legacy numeric-array path copies bounded ROM pages in blocks so conversion
 does not stall the Android main thread once per byte.
@@ -86,6 +88,13 @@ Map objects now retain CFRU's graphics-table selector, so overworld Pokémon
 such as Pallet Town's Stufful use the sprite that matches their text and cry.
 The regional starter gift is also protected from being randomized a second
 time after the cartridge has already chosen it from the selected region.
+The same protection now covers every Kanto-rival, Brendan/May, and Champion
+party branch, so the opponent roster remains paired with the starter/region
+choice made by Radical Red's own scripts.
+Radical Red's Black/White-style six-card party layout and reversed Known Moves
+detail panes use their v4.1 ROM geometry instead of FireRed's stock window and
+text coordinates. The unusual turquoise multi-armed Ursaring at species
+`0x04FF` is the intended Ghost/Fighting Seviian form and is not replaced.
 The new-game warning clears its unmatched black fade on its first rendered
 frame. All 16 cartridge-defined custom lists—including starter region,
 nature, tutor, fossil, type, ball, elevator, and game-mode lists—are extracted

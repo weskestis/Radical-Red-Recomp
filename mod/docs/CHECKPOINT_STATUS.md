@@ -1,4 +1,4 @@
-# Radical Red 0.5.14 verification status
+# Radical Red 0.5.15 verification status
 
 Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 
@@ -26,7 +26,7 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   byte-at-a-time `get`; tileset binary reads do not require one host API, and
   numeric slices are copied page-by-page rather than updating LRU state for
   every byte.
-- Private cache schema: 14.
+- Private cache schema: 15.
 - Wild encounters: 134 maps and 4,866 valid slots across the base and
   relocated 83-map day/night tables; all 177 `SPECIES_NONE` placeholders are
   removed, and a final runtime guard rejects invalid wild battles.
@@ -54,6 +54,13 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   rematches, and game modes; none can fall through to FireRed badge labels.
 - Regional starter gift: the exact species selected through `0x5124` is not
   randomized a second time, even when the species-randomizer flag is active.
+- Rival parties: all starter/region-selected Kanto rival records, Brendan/May
+  encounters, and both Champion trios bypass the host trainer randomizer after
+  the cartridge chooses their branch.
+- Black/White-style UI: the six 14×5 party cards, icons, labels, HP bars, and
+  the reversed Known Moves detail panes use the exact v4.1 ROM geometry.
+- Seviian Ursaring: species `0x04FF` is verified as the intentional
+  Ghost/Fighting form; its ROM sprite is preserved unchanged.
 - Running shoes: flag `0x82F` is present before the first playable step and is
   repaired for existing saves on load/map entry.
 - Console codes: exact matching and persistent flags for `SO2Toxic`, `DexAll`,
@@ -70,8 +77,8 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 - Original randomizers: ROM-backed species, scaled-species, ability, and
   learnset mappings seeded by the full trainer ID.
 - Cold bootstrap: 193 resumable frame-loop checkpoints; longest measured
-  release-gate chunk 1.931 seconds (three-second regression ceiling), including
-  the readBytes-only Android fixture.
+  release-gate chunk 2.284 seconds (three-second regression ceiling), with both
+  modern and readBytes-only Android fixtures completing under the limit.
 - Launcher/engine source modifications: none.
 
 ## Automated release gate
@@ -103,6 +110,9 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 | Route 23–Indigo Plateau and duplicate Six Island edges | PASS |
 | True collision/render bounds for 306 odd-sized layouts | PASS |
 | ROM-exact species, ability, and learnset randomizers | PASS |
+| All regional/starter rival branches bypass trainer randomization | PASS |
+| Six-card RR party layout and Known Moves detail geometry | PASS |
+| Seviian Ursaring identity and Ghost/Fighting form data | PASS |
 | Three RR overworld tables; all 545 addressable / 546 physical mappings | PASS |
 | Full 16-bit direct and indirect graphics IDs remain addressable | PASS |
 | Stufful overworld sheet, interaction species, and cry identity | PASS |

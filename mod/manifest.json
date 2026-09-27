@@ -1,7 +1,7 @@
 {
   "id": "radical_red_experience",
   "name": "Radical Red",
-  "version": "0.5.14",
+  "version": "0.5.15",
   "api": 2,
   "entry": "main.lua",
   "profile": "total_conversion",
