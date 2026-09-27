@@ -517,6 +517,7 @@ local function installDexNav(mod, deps)
     mode = "browse",
     contextCursor = 1,
     status = nil,
+    fieldHeld = {},
   }
 
   local function selectedRow()
@@ -651,13 +652,42 @@ local function installDexNav(mod, deps)
   end
 
   function DexNav.handleFieldInput(game)
-    if not game or game.phase ~= "field" or not game.input
-        or not game.input.wasPressed or Stack.busy() then return false end
+    if not game or not game.input or not game.input.wasPressed then return false end
+    local input = game.input
+    local function queued(key)
+      for _, value in ipairs(input.pressQueue or {}) do
+        if value == key then return true end
+      end
+      return false
+    end
+    local function edge(key)
+      -- core.update surrounds the fixed-step loop. Looking only at
+      -- wasPressed can lose a tap when turbo/catch-up executes several input
+      -- steps in one rendered frame, so include the unconsumed queue and a
+      -- held-button edge while suppressing repeats across zero-step frames.
+      local active = queued(key) or input:wasPressed(key)
+      if input.isDown then active = input:isDown(key) or active end
+      local previous = DexNav.fieldHeld[key] == true
+      DexNav.fieldHeld[key] = active and true or false
+      return active and not previous
+    end
+    local rPressed = edge("r")
+    local selectPressed = edge("select")
+    if game.phase ~= "field" or Stack.busy() then return false end
+    local okBattle, Battle = pcall(require, "src.core.game3.battle")
+    if okBattle and Battle and Battle.isActive and Battle.isActive() then
+      return false
+    end
     if not (flagOn(deps, Qol.FLAG.DEX_NAV) or Qol.dexAllEnabled(deps)) then
       return false
     end
-    if game.input:wasPressed("r") then
-      return DexNav.quickScan(game, game.session or sessionOf(deps))
+    local session = game.session or sessionOf(deps)
+    if rPressed then return DexNav.quickScan(game, session) end
+    -- Android's default overlay has SELECT but no R shoulder. Preserve
+    -- FireRed's registered-key-item binding whenever one exists; otherwise
+    -- SELECT is the field shortcut for the registered DexNav species.
+    if selectPressed and session and session.registeredItem == nil then
+      return DexNav.quickScan(game, session)
     end
     return false
   end
@@ -992,6 +1022,8 @@ function Qol.install(mod, overrides)
     dexAll = dexNav ~= nil,
     teamPreview = teamPreview == true,
     ezCatch = true,
+    dexNavReliableFieldEdge = true,
+    dexNavFieldSelect = true,
     consoleFlags = {
       SO2Toxic = Qol.FLAG.SO2_TOXIC,
       Woyaopp = Qol.FLAG.WOYAOPP,

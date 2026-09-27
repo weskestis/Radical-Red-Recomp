@@ -962,9 +962,59 @@ local function installPartyGridLayout()
   PartyMenu.__rrBwGridPatch = true
 end
 
+local function installBattleSpriteLayout(Profile)
+  local Dataset = require("src.core.game3.dataset")
+  local cache = assert(Dataset.cache(),
+    "Radical Red battle coordinates need the mounted dataset")
+  local rel = Profile.extractRoot() .. "/pokemon/pic_coords.lua"
+  local source = assert(cache:read(rel),
+    "Radical Red battle sprite coordinates are missing")
+  local chunk = assert(load(source, "@" .. rel, "t", {}))
+  local coords = assert(chunk())
+  assert(coords.species == Profile.SPECIES_COUNT
+      and type(coords.front) == "table"
+      and type(coords.back) == "table"
+      and type(coords.elev) == "table",
+    "Radical Red battle sprite coordinates are incomplete")
+  assert(coords.back[155] == 3,
+    "Radical Red Cyndaquil back-sprite baseline is stale")
+
+  -- battle.ui and animation ports all retain this module table, so mutating
+  -- its three registries updates normal drawing and move animations together.
+  local PicCoords = require("src.core.game3.battle.pic_coords")
+  for species = 0, Profile.SPECIES_COUNT - 1 do
+    assert(coords.front[species] ~= nil and coords.back[species] ~= nil
+        and coords.elev[species] ~= nil,
+      "missing Radical Red sprite coordinate for species " .. species)
+    PicCoords.front[species] = coords.front[species]
+    PicCoords.back[species] = coords.back[species]
+    PicCoords.elev[species] = coords.elev[species]
+  end
+
+  local Ui = require("src.core.game3.battle.ui")
+  if not (Ui.__rrFixedHealthboxBounceWrapper
+      and Ui.bounceOffset == Ui.__rrFixedHealthboxBounceWrapper) then
+    local original = Ui.__rrFixedHealthboxBounceOriginal
+      or assert(Ui.bounceOffset)
+    local function fixedHealthboxBounce(kind, ...)
+      -- The battler's subtle menu bounce belongs on the Pokémon sprite. The
+      -- stock host also applied it to the status tile, making both visibly
+      -- travel together at Android scale.
+      if kind == "hb" then return 0 end
+      return original(kind, ...)
+    end
+    Ui.__rrFixedHealthboxBounceOriginal = original
+    Ui.__rrFixedHealthboxBounceWrapper = fixedHealthboxBounce
+    Ui.bounceOffset = fixedHealthboxBounce
+  end
+  Ui.__rrExpandedPicCoords = true
+  return coords
+end
+
 function Visuals.installRuntime(Profile)
   installSummaryDetailLayout()
   installPartyGridLayout()
+  local battleCoords = installBattleSpriteLayout(Profile)
   local OptionMenu = require("src.ui.game3.option_menu")
   if not (OptionMenu.__rrOptionsDrawWrapper
       and OptionMenu.draw == OptionMenu.__rrOptionsDrawWrapper) then
@@ -1130,6 +1180,10 @@ function Visuals.installRuntime(Profile)
     expandedGraphicsIds = true,
     expandedGraphicsTables = true,
     objectGraphicsSelector = true,
+    battleSpriteCoords = true,
+    battleSpriteCoordSpecies = battleCoords.species,
+    cyndaquilBackYOffset = battleCoords.back[155],
+    fixedHealthbox = true,
   }
 end
 

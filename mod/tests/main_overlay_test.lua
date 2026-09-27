@@ -37,7 +37,9 @@ local moduleSources = {
         setupMessageFadeGuard=true,
         summaryDetailLayout=true, partyGridLayout=true,
         expandedGraphicsIds=true, expandedGraphicsTables=true,
-        objectGraphicsSelector=true }
+        objectGraphicsSelector=true, battleSpriteCoords=true,
+        battleSpriteCoordSpecies=1376, cyndaquilBackYOffset=3,
+        fixedHealthbox=true }
     end,
     report=function() return { usedPaletteCount=397 } end,
   }]],
@@ -82,7 +84,8 @@ local moduleSources = {
   end }]],
   ["lib/rr_qol.lua"] = [[return { install=function()
     _G.__rrInstalled.qol=true
-    return { runningShoes=true, dexAll=true, teamPreview=true, ezCatch=true }
+    return { runningShoes=true, dexAll=true, teamPreview=true, ezCatch=true,
+      dexNavReliableFieldEdge=true, dexNavFieldSelect=true }
   end }]],
 }
 
@@ -149,6 +152,8 @@ assert(mod.exports.qolReport.runningShoes == true)
 assert(mod.exports.qolReport.dexAll == true)
 assert(mod.exports.qolReport.teamPreview == true)
 assert(mod.exports.qolReport.ezCatch == true)
+assert(mod.exports.qolReport.dexNavReliableFieldEdge == true)
+assert(mod.exports.qolReport.dexNavFieldSelect == true)
 assert(mod.exports.visualReport.optionsDraw == true)
 assert(mod.exports.visualReport.optionsFallbackGuard == true)
 assert(mod.exports.visualReport.portableOptionsDraw == true)
@@ -161,6 +166,10 @@ assert(mod.exports.visualReport.partyGridLayout == true)
 assert(mod.exports.visualReport.expandedGraphicsIds == true)
 assert(mod.exports.visualReport.expandedGraphicsTables == true)
 assert(mod.exports.visualReport.objectGraphicsSelector == true)
+assert(mod.exports.visualReport.battleSpriteCoords == true)
+assert(mod.exports.visualReport.battleSpriteCoordSpecies == 1376)
+assert(mod.exports.visualReport.cyndaquilBackYOffset == 3)
+assert(mod.exports.visualReport.fixedHealthbox == true)
 assert(mod.exports.visualReport.paletteCount == 451)
 assert(mod.exports.visualReport.spriteCount == 545)
 assert(mod.exports.visualReport.usedPaletteCount == 397)

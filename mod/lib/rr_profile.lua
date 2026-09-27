@@ -17,7 +17,7 @@ local Profile = {
   -- Bump whenever the private-ROM cache layout or a decoded RR structure
   -- changes.  A mismatched marker makes the mod rebuild from the player's
   -- validated import instead of ever mixing old/vanilla cache data.
-  CACHE_SCHEMA = 15,
+  CACHE_SCHEMA = 16,
 
   SPECIES_COUNT = 1376,
   MOVE_COUNT = 1004,
@@ -74,6 +74,11 @@ Profile.OFFSET = {
   speciesToNational = 0x18218F0,
   frontPics = 0x17FA1C4,
   backPics = 0x17B6DC4,
+  -- DPE stores MonCoords as { size, y_offset, u16 padding }. These expanded
+  -- tables are distinct from the sprite-pointer tables above.
+  frontPicCoords = 0x17F8C30,
+  backPicCoords = 0x17B5830,
+  enemyMonElevation = 0x17CD44A,
   normalPalettes = 0x1811208,
   shinyPalettes = 0x181EDC8,
   icons = 0x17FE6CC,

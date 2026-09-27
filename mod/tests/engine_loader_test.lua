@@ -291,6 +291,8 @@ assert(exports.qolReport.runningShoes == true)
 assert(exports.qolReport.dexAll == true)
 assert(exports.qolReport.teamPreview == true)
 assert(exports.qolReport.ezCatch == true)
+assert(exports.qolReport.dexNavReliableFieldEdge == true)
+assert(exports.qolReport.dexNavFieldSelect == true)
 assert(exports.visualReport.optionsDraw == true)
 assert(exports.visualReport.optionsFallbackGuard == true)
 assert(exports.visualReport.portableOptionsDraw == true)
@@ -303,6 +305,10 @@ assert(exports.visualReport.partyGridLayout == true)
 assert(exports.visualReport.expandedGraphicsIds == true)
 assert(exports.visualReport.expandedGraphicsTables == true)
 assert(exports.visualReport.objectGraphicsSelector == true)
+assert(exports.visualReport.battleSpriteCoords == true)
+assert(exports.visualReport.battleSpriteCoordSpecies == 1376)
+assert(exports.visualReport.cyndaquilBackYOffset == 3)
+assert(exports.visualReport.fixedHealthbox == true)
 assert(exports.visualReport.paletteTable == 0x035CCC8)
 assert(exports.visualReport.paletteCount == 451)
 assert(exports.visualReport.spriteCount == 545)
@@ -312,6 +318,31 @@ assert(exports.visualReport.usedPaletteCount == 397)
 assert(exports.visualReport.stuffulGraphicsId == 0x016E)
 assert(exports.visualReport.playerPaletteTag == 0x1100)
 assert(exports.visualReport.momPaletteTag == 0x1168)
+
+-- Battle sprites must use RR's expanded DPE coordinates rather than the
+-- still-linked FireRed table. The status tile remains fixed while the active
+-- battler keeps its menu bounce.
+do
+  local PicCoords = require("src.core.game3.battle.pic_coords")
+  assert(PicCoords.back[155] == 3 and PicCoords.front[155] == 14,
+    "Cyndaquil retained FireRed's cropped back-sprite baseline")
+  assert(PicCoords.back[1375] == 7 and PicCoords.front[1375] == 0,
+    "expanded-species battle coordinates were not installed")
+  local BattleUi = require("src.core.game3.battle.ui")
+  local _, cyndaquilY = BattleUi.battlerSpriteCenter(
+    "player", 155, { x = 72, y = 80 })
+  assert(cyndaquilY == 87,
+    "Cyndaquil back sprite was not raised to Radical Red's baseline")
+  local savedBounce = BattleUi._bounce
+  BattleUi._bounce = {
+    hb = { [0] = { y = 2 } }, mon = { [0] = { y = 2 } },
+  }
+  assert(BattleUi.bounceOffset("hb", 0) == 0,
+    "player status tile still follows the Pokemon bounce")
+  assert(BattleUi.bounceOffset("mon", 0) == 2,
+    "battle sprite bounce was disabled with the status tile")
+  BattleUi._bounce = savedBounce
+end
 
 -- RR swaps the two halves of FireRed's move-detail screen and replaces the
 -- stock party list with a two-column grid. Verify the live engine functions,

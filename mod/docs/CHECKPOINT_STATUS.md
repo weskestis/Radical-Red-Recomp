@@ -1,4 +1,4 @@
-# Radical Red 0.5.15 verification status
+# Radical Red 0.5.16 verification status
 
 Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 
@@ -26,7 +26,7 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   byte-at-a-time `get`; tileset binary reads do not require one host API, and
   numeric slices are copied page-by-page rather than updating LRU state for
   every byte.
-- Private cache schema: 15.
+- Private cache schema: 16.
 - Wild encounters: 134 maps and 4,866 valid slots across the base and
   relocated 83-map day/night tables; all 177 `SPECIES_NONE` placeholders are
   removed, and a final runtime guard rejects invalid wild battles.
@@ -59,6 +59,10 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   the cartridge chooses their branch.
 - Black/White-style UI: the six 14×5 party cards, icons, labels, HP bars, and
   the reversed Known Moves detail panes use the exact v4.1 ROM geometry.
+- Battle sprite geometry: all 1,376 front/back offsets and enemy elevations
+  come from RR's expanded DPE tables; Cyndaquil's corrected back offset is 3,
+  signed form offsets are retained, and status tiles do not follow battler
+  menu bounce.
 - Seviian Ursaring: species `0x04FF` is verified as the intentional
   Ghost/Fighting form; its ROM sprite is preserved unchanged.
 - Running shoes: flag `0x82F` is present before the first playable step and is
@@ -67,8 +71,9 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   `Woyaopp`, `TeamPreview`, and `EZCatch`; DexNav disclosure, opponent preview,
   guaranteed catch, early-item, and Viridian level-cap paths are exercised.
 - DexNav: story unlock and DexAll disclosure, Register/Scan/Cancel, saved
-  registration and search levels, chain lifecycle, R/SELECT controls, fishing
-  rods, complete generated battle payloads, and CFRU search bonuses are live.
+  registration and search levels, chain lifecycle, latched R/SELECT controls,
+  key-item SELECT preservation, fishing rods, complete generated battle
+  payloads, and CFRU search bonuses are live.
 - Party selection: the live close-before-select callback commits slot two
   before the next native; Combee eligibility and gender mutation are verified.
 - Battle text: all expanded CFRU placeholders present in the v4.1 bundle are
@@ -76,8 +81,8 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   text recovers the live self-target defender used by Roost.
 - Original randomizers: ROM-backed species, scaled-species, ability, and
   learnset mappings seeded by the full trainer ID.
-- Cold bootstrap: 193 resumable frame-loop checkpoints; longest measured
-  release-gate chunk 2.284 seconds (three-second regression ceiling), with both
+- Cold bootstrap: 194 resumable frame-loop checkpoints; longest measured
+  release-gate chunk 1.969 seconds (three-second regression ceiling), with both
   modern and readBytes-only Android fixtures completing under the limit.
 - Launcher/engine source modifications: none.
 
@@ -112,6 +117,8 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 | ROM-exact species, ability, and learnset randomizers | PASS |
 | All regional/starter rival branches bypass trainer randomization | PASS |
 | Six-card RR party layout and Known Moves detail geometry | PASS |
+| Expanded battle sprite coordinates and Cyndaquil baseline | PASS |
+| Fixed status tile with independent battler bounce | PASS |
 | Seviian Ursaring identity and Ghost/Fighting form data | PASS |
 | Three RR overworld tables; all 545 addressable / 546 physical mappings | PASS |
 | Full 16-bit direct and indirect graphics IDs remain addressable | PASS |

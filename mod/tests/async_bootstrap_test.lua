@@ -32,7 +32,9 @@ local moduleSources = {
         portableChoiceDraw=true, gameModesFadeGuard=true,
         setupMessageFadeGuard=true,
         expandedGraphicsIds=true, expandedGraphicsTables=true,
-        objectGraphicsSelector=true }
+        objectGraphicsSelector=true, battleSpriteCoords=true,
+        battleSpriteCoordSpecies=1376, cyndaquilBackYOffset=3,
+        fixedHealthbox=true }
     end,
     report=function() return nil end,
   }]],
@@ -78,7 +80,8 @@ local moduleSources = {
   end }]],
   ["lib/rr_qol.lua"] = [[return { install=function()
     _G.__rrAsyncInstalled.qol=true
-    return { runningShoes=true, dexAll=true, teamPreview=true, ezCatch=true }
+    return { runningShoes=true, dexAll=true, teamPreview=true, ezCatch=true,
+      dexNavReliableFieldEdge=true, dexNavFieldSelect=true }
   end }]],
 }
 

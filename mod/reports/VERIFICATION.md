@@ -1,4 +1,4 @@
-# Verification report — Radical Red 0.5.15
+# Verification report — Radical Red 0.5.16
 
 This report records the release-candidate gate run against the exact Radical
 Red v4.1 ROM. Private ROM bytes and generated assets are not part of the mod
@@ -17,7 +17,7 @@ package.
 | Running shoes active before the first playable step | PASS |
 | All five bedroom-console codes and persistent flags | PASS |
 | DexAll, TeamPreview, and EZCatch host behavior | PASS |
-| DexNav registration, scanning, search levels, chains, rods, and R shortcut | PASS |
+| DexNav registration, scanning, search levels, chains, rods, and latched R/SELECT shortcuts | PASS |
 | DexNav encounter bonuses and complete battle payloads | PASS |
 | Woyaopp Viridian service and SO2Toxic item branches | PASS |
 | Live party-menu slot-two Combee gender change | PASS |
@@ -47,6 +47,9 @@ package.
 | Relocated rival naming sheet and all nine live frame-table entries | PASS |
 | RR six-card party chrome, icon, text, and HP-bar geometry | PASS |
 | RR Known Moves detail panes and selection cursor geometry | PASS |
+| All 1,376 RR battle sprite offsets/elevations installed | PASS |
+| Cyndaquil back-sprite baseline and signed form offset sentinels | PASS |
+| Fixed status tile with independent Pokémon bounce | PASS |
 | Seviian Ursaring species/form identity preserved | PASS |
 | Actual Game Modes list clears active and completed black fade veils | PASS |
 | Authentic Game Modes renderer on normal frames | PASS |
@@ -77,5 +80,5 @@ expanded-variable Turtwig sequence with species randomization enabled,
 selector-qualified Stufful mapping, all 16 custom list-menu IDs, every live map
 connection/landing, and teardown using the stock engine modules. Modern and
 readBytes-only empty-cache conversions plus cached relaunches complete under a
-256 MiB limit. The cold path yields at 193 checkpoints and does not expose the
+256 MiB limit. The cold path yields at 194 checkpoints and does not expose the
 vanilla game loop before Radical Red is fully active.

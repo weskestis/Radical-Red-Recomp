@@ -1,6 +1,6 @@
 # Radical Red
 
-Radical Red 0.5.15 is a FireRed-only runtime total conversion for unmodified
+Radical Red 0.5.16 is a FireRed-only runtime total conversion for unmodified
 gen1recomp 0.3.5 and 0.3.20. It validates the player's own Pokémon Radical Red
 v4.1 ROM, builds a private cache on first start, and mounts that data as the
 active game. No launcher, executable, APK, or engine file is modified.
@@ -15,8 +15,9 @@ not overwrite each other's saves.
 - 425 Radical Red maps with their layouts, warps, objects, encounters, text,
   scripts, movements, shops, trainers, and event data;
 - the expanded 1,376-species, 1,004-move, 282-ability, and 750-item registries;
-- expanded Pokémon front/back sprites, icons, palettes, learnsets,
-  evolutions, TM/HM and tutor compatibility, and Pokédex data;
+- expanded Pokémon front/back sprites, their full 1,376-entry battle
+  coordinate/elevation registries, icons, palettes, learnsets, evolutions,
+  TM/HM and tutor compatibility, and Pokédex data;
 - Radical Red title, menu/battle chrome, item icons, overworld graphics,
   naming assets, field effects, and ROM audio;
 - all 545 addressable object-event sprites from Radical Red's ordinary,
@@ -37,8 +38,8 @@ not overwrite each other's saves.
   `SO2Toxic`, `DexAll`, `Woyaopp`, `TeamPreview`, and `EZCatch`;
 - a functional current-area DexNav with persistent registration, search levels,
   chains, scan encounters, rod requirements, egg moves, hidden abilities,
-  held items, IV potential, and the registered R-button shortcut; `DexAll`
-  reveals unseen entries, while SELECT registers on Android without R;
+  held items, IV potential, and reliable registered R/SELECT field shortcuts;
+  `DexAll` reveals unseen entries, and an assigned key item keeps SELECT;
 - raid encounters, rewards, capture flow, barriers, Max moves, repeated boss
   attacks, stat nullification, and raid loss rules;
 - ROM-backed facility trainers, spreads, rentals, and party restoration.
@@ -78,7 +79,7 @@ The first start opens the game, displays live conversion progress, and keeps
 Android responsive while the bounded ROM reader and staged extractor do their
 work. Interrupted cache work is safely resumed. If a conversion step fails,
 the exact stage and error remain visible instead of silently returning to the
-launcher. Version 0.5.15 negotiates the string, numeric byte-array, and
+launcher. Version 0.5.16 negotiates the string, numeric byte-array, and
 byte-at-a-time ROM-reader interfaces found across supported Android payloads.
 Its legacy numeric-array path copies bounded ROM pages in blocks so conversion
 does not stall the Android main thread once per byte.
@@ -117,9 +118,14 @@ gender/form/level operation.
 DexNav's former display-only list now executes its Register, Scan, and Cancel
 actions and persists search progress in the Radical Red save. Scan encounters
 carry CFRU's level, shiny-check, egg-move, ability, held-item, and IV-potential
-bonuses into the live battle. Roost and other CFRU effect text can recover the
-active self-target battler when the ROM script omits an explicit defender,
-without replacing a defender supplied by the normal battle engine.
+bonuses into the live battle. Its field control now latches queued/held input
+across turbo frames, and Android SELECT scans when it is not reserved for a
+registered key item. Battle sprites use Radical Red's own expanded baselines
+instead of FireRed's table—fixing Cyndaquil's cropped back sprite—and the
+status tile no longer bobs with the active Pokémon. Roost and other CFRU
+effect text can recover the active self-target battler when the ROM script
+omits an explicit defender, without replacing a defender supplied by the
+normal battle engine.
 
 ## Verification
 

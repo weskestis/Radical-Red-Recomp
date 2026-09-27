@@ -90,6 +90,7 @@ local function markerReady(cache, Profile)
     root .. "/pokemon/tmhm.lua",
     root .. "/pokemon/tutor.lua",
     root .. "/pokemon/battle_moves.lua",
+    root .. "/pokemon/pic_coords.lua",
     root .. "/pokemon/front/1.rgba",
     root .. "/pokemon/back/1.rgba",
     root .. "/pokemon/icons/1.rgba",
@@ -317,6 +318,44 @@ local function writeBattleMoves(rom, cache, Profile)
   lines[#lines + 1] = ""
   put(cache, Profile.extractRoot() .. "/pokemon/battle_moves.lua", table.concat(lines, "\n"))
   return counts
+end
+
+local function writePicCoords(rom, cache, Profile)
+  local front, back, elev = {}, {}, {}
+  local cyndaquilBack
+  for species = 0, Profile.SPECIES_COUNT - 1 do
+    -- DPE's struct MonCoords is size, y_offset, then two padding bytes.
+    local frontY = rom:get(Profile.OFFSET.frontPicCoords + species * 4 + 1)
+    local backY = rom:get(Profile.OFFSET.backPicCoords + species * 4 + 1)
+    -- RR uses -3 (stored as 0xFD) for Galarian Weezing's tall front sprite.
+    -- Preserve that intended signed displacement in the host renderer.
+    if frontY >= 128 then frontY = frontY - 256 end
+    if backY >= 128 then backY = backY - 256 end
+    local elevation = rom:get(Profile.OFFSET.enemyMonElevation + species)
+    assert(frontY >= -64 and frontY <= 64
+        and backY >= -64 and backY <= 64 and elevation <= 64,
+      "invalid Radical Red sprite coordinate for species " .. species)
+    front[#front + 1] = ("[%d]=%d"):format(species, frontY)
+    back[#back + 1] = ("[%d]=%d"):format(species, backY)
+    elev[#elev + 1] = ("[%d]=%d"):format(species, elevation)
+    if species == 155 then cyndaquilBack = backY end
+  end
+  -- A relocated-table typo can still produce syntactically valid Lua. Pin a
+  -- changed RR sentinel so FireRed's stale 9-pixel Cyndaquil baseline cannot
+  -- silently return.
+  assert(cyndaquilBack == 3,
+    "Radical Red Cyndaquil back-sprite coordinate moved")
+  local source = table.concat({
+    "-- Generated from Radical Red's expanded DPE sprite-coordinate tables.",
+    "return {",
+    ("  species = %d,"):format(Profile.SPECIES_COUNT),
+    "  front = { " .. table.concat(front, ",") .. " },",
+    "  back = { " .. table.concat(back, ",") .. " },",
+    "  elev = { " .. table.concat(elev, ",") .. " },",
+    "}", "",
+  }, "\n")
+  put(cache, Profile.extractRoot() .. "/pokemon/pic_coords.lua", source)
+  return { species = Profile.SPECIES_COUNT, cyndaquilBack = cyndaquilBack }
 end
 
 local function corePokemonReady(cache, Profile)
@@ -586,24 +625,26 @@ function Extractor.ensure(mod, Profile, opts)
     "Radical Red Pokemon extraction failed before core assets were complete ("
       .. tostring(pokemonExtractError or missingPokemon) .. ")")
 
-  progress("expanded_tables", 0, 7)
+  progress("expanded_tables", 0, 8)
   writeAbilities(rom, mod.cache, Profile)
-  progress("expanded_tables", 1, 7)
+  progress("expanded_tables", 1, 8)
   local learnEntries, learnSpecies = writeLearnsets(rom, mod.cache, Profile)
-  progress("expanded_tables", 2, 7)
+  progress("expanded_tables", 2, 8)
   local tmSpecies = writeTmhm(rom, mod.cache, Profile)
-  progress("expanded_tables", 3, 7)
+  progress("expanded_tables", 3, 8)
   local tutorSpecies = writeTutors(rom, mod.cache, Profile)
-  progress("expanded_tables", 4, 7)
+  progress("expanded_tables", 4, 8)
   local categoryCounts = writeBattleMoves(rom, mod.cache, Profile)
-  progress("expanded_tables", 5, 7)
+  progress("expanded_tables", 5, 8)
+  local picCoords = writePicCoords(rom, mod.cache, Profile)
+  progress("expanded_tables", 6, 8)
   local multichoiceReport = require("src.import.gba.multichoice_extract").run(
     rom, mod.cache, { cacheRoot = Profile.extractRoot() })
-  progress("expanded_tables", 6, 7)
+  progress("expanded_tables", 7, 8)
   require("src.import.gba.items_extract").run(rom, mod.cache, {
     cacheRoot = Profile.extractRoot(), force = true,
   })
-  progress("expanded_tables", 7, 7)
+  progress("expanded_tables", 8, 8)
   local optionalOk, optionalFailures = runOptionalExtractors(
     rom, mod.cache, Profile, mod.log, progress)
   rom:clearCache()
@@ -625,6 +666,7 @@ function Extractor.ensure(mod, Profile, opts)
     Profile.extractRoot() .. "/pokemon/learnsets.lua",
     Profile.extractRoot() .. "/pokemon/tmhm.lua",
     Profile.extractRoot() .. "/pokemon/tutor.lua",
+    Profile.extractRoot() .. "/pokemon/pic_coords.lua",
     Profile.extractRoot() .. "/items/pack.lua",
   })
   assert(essentialsOk, "Radical Red cache is incomplete: missing " .. tostring(missing))
@@ -652,6 +694,7 @@ function Extractor.ensure(mod, Profile, opts)
     tmSpecies = tmSpecies,
     tutorSpecies = tutorSpecies,
     categoryCounts = categoryCounts,
+    picCoords = picCoords,
     multichoiceLists = multichoiceReport.listCount,
     customListMenus = world.worldAudit.customListMenus,
     worldAudit = world.worldAudit,

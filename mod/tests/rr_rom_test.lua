@@ -18,7 +18,7 @@ local Profile = assert(loadfile("lib/rr_profile.lua"))()
 local rom = RR.open(imports, RR.IMPORT_ID)
 local report = rom:verify()
 
-assert(Profile.CACHE_SCHEMA == 15)
+assert(Profile.CACHE_SCHEMA == 16)
 assert(Profile.OFFSET.wildMonDayHeaders == 0x1166AB8)
 assert(Profile.OFFSET.wildMonNightHeaders == 0x1166428)
 assert(Profile.OFFSET.overworldGraphicsPointers == 0x0EB1000)
@@ -27,6 +27,9 @@ assert(Profile.OFFSET.overworldPlayerGraphicsPointers == 0x134FCB8)
 assert(Profile.OFFSET.namingRivalGfx == 0x0EE82B0)
 assert(Profile.OFFSET.partyMenuSlotTilemap == 0x045A180)
 assert(Profile.OFFSET.partyMenuSlotEmptyTilemap == 0x045A210)
+assert(Profile.OFFSET.frontPicCoords == 0x17F8C30)
+assert(Profile.OFFSET.backPicCoords == 0x17B5830)
+assert(Profile.OFFSET.enemyMonElevation == 0x17CD44A)
 assert(Profile.OW_COUNT == 257)
 assert(Profile.OW_RUNTIME_PRIMARY_COUNT == 256)
 assert(Profile.OW_POKEMON_COUNT == 240)
@@ -43,6 +46,16 @@ local function rawU32(offset)
   return bytes:byte(1) + bytes:byte(2) * 0x100
     + bytes:byte(3) * 0x10000 + bytes:byte(4) * 0x1000000
 end
+
+-- These are the expanded 1,376-species DPE coordinate registries, not
+-- FireRed's still-present 412-entry originals. Cyndaquil's RR back sprite is
+-- six pixels higher than the stale stock value that caused the video crop.
+assert(imports:read(RR.IMPORT_ID,
+  Profile.OFFSET.backPicCoords + 155 * 4 + 1, 1):byte() == 3)
+assert(imports:read(RR.IMPORT_ID,
+  Profile.OFFSET.frontPicCoords + 155 * 4 + 1, 1):byte() == 14)
+assert(imports:read(RR.IMPORT_ID,
+  Profile.OFFSET.enemyMonElevation + 12, 1):byte() == 17)
 
 -- CFRU stores the graphics-table selector in the formerly-padding byte at +3
 -- of each object-event record. Pallet's Route 21 blocker is 0x01:0x6E, not

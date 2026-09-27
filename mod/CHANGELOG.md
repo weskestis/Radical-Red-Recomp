@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.16 — Battle sprite baselines and reliable DexNav controls
+
+- Extract and install Radical Red's complete 1,376-entry front-sprite,
+  back-sprite, and enemy-elevation coordinate tables instead of positioning
+  expanded art with FireRed's 412-species constants. Cyndaquil and other
+  changed back sprites now use their ROM baselines, and later species/forms
+  no longer fall back to zero merely because FireRed has no table row.
+- Preserve Radical Red's signed negative coordinate for Galarian Weezing and
+  apply the same coordinate data to normal drawing and battle animations.
+- Keep battle status tiles fixed during the active Pokémon's menu bounce;
+  battler movement and attack/send-out animation offsets remain enabled.
+- Make the registered DexNav field shortcut latch queued and held input so
+  turbo/catch-up frames cannot swallow or duplicate a tap. Android SELECT now
+  performs the registered scan when no key item is assigned, while an assigned
+  key item retains FireRed's original SELECT behavior.
+- Bump the private cache schema to 16 and add exact-ROM regressions for all
+  expanded coordinate families, Cyndaquil's corrected center, fixed status
+  tiles, duplicate-input suppression, and the Android SELECT shortcut.
+
 ## 0.5.15 — Rival identity and Black/White-style menu repair
 
 - Preserve every starter/region-dependent rival party after Radical Red's

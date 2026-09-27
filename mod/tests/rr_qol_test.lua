@@ -135,6 +135,8 @@ local report = Qol.install(mod, {
 })
 
 assert(report.runningShoes and report.dexAll and report.teamPreview and report.ezCatch)
+assert(report.dexNavReliableFieldEdge == true
+    and report.dexNavFieldSelect == true)
 assert(store.flags[Qol.FLAG.RUNNING_SHOES] == true,
   "new games did not receive running shoes immediately")
 store.flags[Qol.FLAG.RUNNING_SHOES] = false
@@ -243,17 +245,41 @@ assert(perfect >= boosted.dexNavPotential,
 rngValue = 50
 
 -- A registered species can be scanned from the field with R, matching CFRU's
--- registered-DexNav shortcut.  This goes through the installed core.update
--- wrapper rather than calling the menu implementation directly.
-pressed = { r = true }
+-- registered-DexNav shortcut. Exercise the raw queue path used when turbo or
+-- catch-up performs multiple fixed steps before core.update returns.
+pressed = {}
+input.pressQueue = { "r" }
 local fieldGame = { phase = "field", session = session, input = input }
 assert(wrappers["core.update"](function() return "updated" end,
     fieldGame, 1 / 60) == "updated")
 assert(#startedBattles == 3 and startedBattles[3].encounter.species == 25,
   "registered DexNav R shortcut did not start the selected encounter")
+wrappers["core.update"](function() return "updated" end, fieldGame, 1 / 60)
+assert(#startedBattles == 3,
+  "held/queued DexNav shortcut launched the same search twice")
+input.pressQueue = {}
 startedBattles[3].done("run")
 assert(dexState.chain == 0,
   "running from the registered DexNav shortcut did not reset the chain")
+
+-- The default Android overlay exposes SELECT but not R. With no registered
+-- key item it must run the same field shortcut, while an assigned key item
+-- keeps FireRed's original SELECT action.
+wrappers["core.update"](function() return "updated" end, fieldGame, 1 / 60)
+pressed = { select = true }
+assert(wrappers["core.update"](function() return "updated" end,
+    fieldGame, 1 / 60) == "updated")
+assert(#startedBattles == 4 and startedBattles[4].encounter.species == 25,
+  "Android SELECT did not start the registered DexNav encounter")
+startedBattles[4].done("run")
+pressed = {}
+wrappers["core.update"](function() return "updated" end, fieldGame, 1 / 60)
+session.registeredItem = 262
+pressed = { select = true }
+wrappers["core.update"](function() return "updated" end, fieldGame, 1 / 60)
+assert(#startedBattles == 4,
+  "DexNav stole SELECT from FireRed's registered key item")
+session.registeredItem = nil
 
 -- Any ordinary battle and any map transition break a CFRU DexNav chain.
 dexState.chain, dexState.chainMap = 3, session.map

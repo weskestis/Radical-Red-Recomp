@@ -1,0 +1,275 @@
+{
+  "modkit": "1.0.0",
+  "packed_at": "2026-09-28T00:00:00Z",
+  "id": "radical_red_experience",
+  "version": "0.5.16",
+  "api": 2,
+  "engine_range": ">=0.0.0-dev <1.0.0",
+  "files": [
+    {
+      "path": ".luarc.json",
+      "bytes": 69,
+      "sha256": "64f42cfe88c55ecffc1dcd2314a97fd2eb9e15536d70c39b57f181604687f4d6"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 20277,
+      "sha256": "287cca0579d138c0a432e37e6ff677792d1246a8702e05faadc2c3bb9128af2b"
+    },
+    {
+      "path": "README.md",
+      "bytes": 10167,
+      "sha256": "eef0e62413e48a2c415d1155c9231c5822b4c3be3dac6b771059c7326ffad2bb"
+    },
+    {
+      "path": "SHA256SUMS.txt",
+      "bytes": 4595,
+      "sha256": "e32ced50e9541ac5716f747312c91f0076e9a2750ba530025090d9eef24e6782"
+    },
+    {
+      "path": "docs/CHECKPOINT_STATUS.md",
+      "bytes": 8869,
+      "sha256": "16bf60a1d0cb132cf3d735b02314bffcb2481bb7d4bcec962ed232b9dd3ccb8d"
+    },
+    {
+      "path": "docs/PORTING_MATRIX.md",
+      "bytes": 7012,
+      "sha256": "5b5c05e59108bc15b6fb6e59f3b6b863861e7d1d7a813b2ee97863fce1da9a67"
+    },
+    {
+      "path": "lib/rr_battle.lua",
+      "bytes": 11791,
+      "sha256": "d780d734996aaf7f149bb60d0a4c8aa245d7ce0558e0683fe3417ae639a86fbd"
+    },
+    {
+      "path": "lib/rr_encounters.lua",
+      "bytes": 15584,
+      "sha256": "b7637eaa1939a4c7a2fc7a0f7276545b88176c58dd55b1e5b29a9c5c547a68c2"
+    },
+    {
+      "path": "lib/rr_extract.lua",
+      "bytes": 27744,
+      "sha256": "c65f76c510463b313cb10ac46eb7540669e3ab72c26af3e194a4ed6910e39673"
+    },
+    {
+      "path": "lib/rr_facilities.lua",
+      "bytes": 32874,
+      "sha256": "718577e94b70c22ce1bcc8bf8ad6ff4519690844395210f23b64f49d571b807b"
+    },
+    {
+      "path": "lib/rr_listmenus.lua",
+      "bytes": 3468,
+      "sha256": "833a5038ca42b6e43b581eacb5ab0dba83d62e3ce95079cb0506636c7a093045"
+    },
+    {
+      "path": "lib/rr_mechanics.lua",
+      "bytes": 19504,
+      "sha256": "bcec23c23e1cc21415a5223ffba863f499b0e2056b9e3737050fbf325a597097"
+    },
+    {
+      "path": "lib/rr_natives.lua",
+      "bytes": 27189,
+      "sha256": "aa36ed858f46883e864a2fe83ba7edf6662c0303426e54043dff3883cbecf709"
+    },
+    {
+      "path": "lib/rr_profile.lua",
+      "bytes": 12429,
+      "sha256": "f61e0f4886cabca53e3b545ce6c741f7149fb1da869745ad0e5426cca2ca9842"
+    },
+    {
+      "path": "lib/rr_qol.lua",
+      "bytes": 36209,
+      "sha256": "c957216489f771bbedb39058ef420b1ff5f66cdba5c7bb0c0f265c2b9caa189c"
+    },
+    {
+      "path": "lib/rr_raids.lua",
+      "bytes": 68001,
+      "sha256": "ae10562b1e334623b732637304e1ecd834b3bb383ced215432be5929c52f9e67"
+    },
+    {
+      "path": "lib/rr_randomizer.lua",
+      "bytes": 14736,
+      "sha256": "c5178b8a39025ef4ed6e4b57e59519ebc2610801742de31cc4cf8bc60c015ecb"
+    },
+    {
+      "path": "lib/rr_rom.lua",
+      "bytes": 12796,
+      "sha256": "3722dc974480ed1c54a116cada2586cef9a3c40525b1e48a932c74b85c27c6c7"
+    },
+    {
+      "path": "lib/rr_runtime.lua",
+      "bytes": 24872,
+      "sha256": "16b0cd108635257f123e70e63590902df9f827ab544d2836f27ca6999e2d2442"
+    },
+    {
+      "path": "lib/rr_story.lua",
+      "bytes": 16726,
+      "sha256": "55b98672baa8f2cfbbee5586ef728c6085c37f219479cb7915fc736e1d837c2f"
+    },
+    {
+      "path": "lib/rr_stream_rom.lua",
+      "bytes": 9748,
+      "sha256": "af6abd2a53f72b2c5ad7a894c7fbf5e64e170256de9484c201b4ce06572bbc78"
+    },
+    {
+      "path": "lib/rr_visuals.lua",
+      "bytes": 44689,
+      "sha256": "6c1c9dacdc5546ce69e00523a98e6ad95a76a256a5618d63df6009f70c12c1ec"
+    },
+    {
+      "path": "lib/rr_world.lua",
+      "bytes": 26405,
+      "sha256": "3f95d70b0789e15c45f47cfdfed9222d288c0085ef6d6659fdaa4c68df67d978"
+    },
+    {
+      "path": "main.lua",
+      "bytes": 12780,
+      "sha256": "22e4bec05ed403bfcbffdc59b8e11d1339d108229c4194fcad767ce488b13243"
+    },
+    {
+      "path": "manifest.json",
+      "bytes": 958,
+      "sha256": "5cd67c1a22226b1bed8c7d8c11a5e2508515126b23f4109d5ce0d7fcda0bfb70"
+    },
+    {
+      "path": "mod.card",
+      "bytes": 2448,
+      "sha256": "33b2c07bc2384b4bc4a32a45e3623842e36d09a6252110a67ba7bca35dff2a8b"
+    },
+    {
+      "path": "reports/ENGINE_TARGET.json",
+      "bytes": 473,
+      "sha256": "9aecc3c78a931419b7cc9b53d584fc2bab19aabe34e35bc5b92b74f87273017b"
+    },
+    {
+      "path": "reports/VERIFICATION.md",
+      "bytes": 5248,
+      "sha256": "f47009c6750c3cb5a307f1bcf54a43cb47b0663662da835a7416c6439b6a8577"
+    },
+    {
+      "path": "tests/async_bootstrap_test.lua",
+      "bytes": 7605,
+      "sha256": "9ccc37944eaff02f8726e048d0a86705bdf9e95aa8060bc82e837e150c362d5e"
+    },
+    {
+      "path": "tests/battle_damage_test.lua",
+      "bytes": 2743,
+      "sha256": "689d5fc006f913ddea1316253f9bab6de084e9499b6c7e5ed443f696bd4c8aea"
+    },
+    {
+      "path": "tests/callback_coverage_test.lua",
+      "bytes": 2482,
+      "sha256": "bf5ef3226cbb1fc5063b3e2bf7117c3057830d3f56415c5f7bf4db6df5c1e269"
+    },
+    {
+      "path": "tests/engine_loader_test.lua",
+      "bytes": 66649,
+      "sha256": "898e543fc444de9899c509070d74191e57e32b153c57015c8bb5800c1891cf0a"
+    },
+    {
+      "path": "tests/main_overlay_test.lua",
+      "bytes": 7937,
+      "sha256": "50bbe22bb1a30b29c0ba6478c42757b21bcd0a5054ef7a4a46059b48f2317be9"
+    },
+    {
+      "path": "tests/rr_battle_test.lua",
+      "bytes": 7052,
+      "sha256": "9585b338db29b485eb0ab4d23ff0ee51cb5c8f63168c9b98c72b266cb3484dec"
+    },
+    {
+      "path": "tests/rr_encounters_test.lua",
+      "bytes": 3123,
+      "sha256": "5da901d425627184a2ddacdc0b855a902475c8aff3443f4d2cc69726bc5b9023"
+    },
+    {
+      "path": "tests/rr_facilities_test.lua",
+      "bytes": 11710,
+      "sha256": "8b7814120fbcf9c3954a5f174c96dc942a1ad93a6905e31934899ef9504c0a15"
+    },
+    {
+      "path": "tests/rr_mechanics_test.lua",
+      "bytes": 7792,
+      "sha256": "0b445a586392dbb92d20315362558b66f51fd1d35e7cab5ddd9038d3fe0623f8"
+    },
+    {
+      "path": "tests/rr_natives_test.lua",
+      "bytes": 10258,
+      "sha256": "8d245683c58e9ae9d4afbb206fff6bcbdf5294d99313ccac93ad5245c0e25e68"
+    },
+    {
+      "path": "tests/rr_qol_test.lua",
+      "bytes": 12068,
+      "sha256": "cc9f5170905215b49d92d9cf6b5b9b0432ea552ad7d368050ddbf9cc4d3318d0"
+    },
+    {
+      "path": "tests/rr_raids_test.lua",
+      "bytes": 11845,
+      "sha256": "c615539cd7c927e1162a5a41529d2b8d53fc564899cf88c91010191b6c5075c3"
+    },
+    {
+      "path": "tests/rr_randomizer_test.lua",
+      "bytes": 852,
+      "sha256": "bf2a8484bfb37821c78788ac1feb963b0cccb84cab7ba99bf43cfcf04b533665"
+    },
+    {
+      "path": "tests/rr_rom_test.lua",
+      "bytes": 6635,
+      "sha256": "3a2e1040fbfadc9de40cde9246aaa6eede02a01a6449b4cf4dcd29fe68bdc16b"
+    },
+    {
+      "path": "tests/rr_story_test.lua",
+      "bytes": 7009,
+      "sha256": "d17b6a121c0afd3ecca9ca0dc5ee8f732286816cf0a69a80ef33b0c0c32fa695"
+    },
+    {
+      "path": "tests/stream_rom_compat_test.lua",
+      "bytes": 2662,
+      "sha256": "84afbd83ab078c99dd3f50fe131664ee9097e9dade712a53cb78389cd29ca4e9"
+    },
+    {
+      "path": "tests/vanilla_off_test.lua",
+      "bytes": 538,
+      "sha256": "3567ca75639fcd60e097ffcb39733719b3bf44ce5d7ead53f187d96ebccb8f81"
+    },
+    {
+      "path": "tools/audit_callbacks.lua",
+      "bytes": 2034,
+      "sha256": "d84cf49ef85859a8662036e55bc8a156017f344e3ee92429fd384249f33733ba"
+    },
+    {
+      "path": "tools/audit_callbacks.py",
+      "bytes": 4449,
+      "sha256": "7e984d2d1902362da08986d6fefa41f2ce588a15122fd3459f467b4dfca828e8"
+    },
+    {
+      "path": "tools/audit_generated_sprites.py",
+      "bytes": 19621,
+      "sha256": "04494eb310fdf74fc1ffc374868a701f78d615c75423f3a489d9a681153c8e63"
+    },
+    {
+      "path": "tools/check_package.py",
+      "bytes": 1791,
+      "sha256": "072fb56a4bf77bb532168e3173c570bc4e825d456bf791514d08e8af9e25ae80"
+    },
+    {
+      "path": "tools/thumb_disasm.py",
+      "bytes": 2942,
+      "sha256": "745bd348be59318fd86459d08177a94b5bed6ae2efbbd650826f2c81f7692231"
+    },
+    {
+      "path": "tools/verify_sources.py",
+      "bytes": 13108,
+      "sha256": "32e4c314be4e9458cb411a3168f34682d5154cfc6dead005fe3a9212c6309b51"
+    },
+    {
+      "path": "transforms.lua",
+      "bytes": 404,
+      "sha256": "3469af3b2a52b768c75e95674039ad0932442ea53ad6cf78fdeac3631cd1d595"
+    }
+  ],
+  "lint": {
+    "no_rom_content": "pass",
+    "schema": "pass",
+    "cross_refs": "pass"
+  }
+}
