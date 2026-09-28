@@ -70,6 +70,48 @@ local function isFixedRival(trainerClass, trainerId)
     or FIXED_RIVAL_IDS[trainerId] == true
 end
 
+-- Radical Red's authored boss teams are part of the difficulty design, not
+-- ordinary randomizer fodder.  Use the live extracted trainer metadata so this
+-- stays tied to the player's exact v4.1 ROM instead of baking a second roster
+-- into the mod.  Class labels cover Gym Leaders / Elite Four / Champions and
+-- Rocket Admins; named entries cover recurring bosses whose class is shared
+-- with ordinary trainers (notably Johto leaders and Giovanni).
+local FIXED_BOSS_NAMES = {
+  BROCK = true, MISTY = true, ["LT. SURGE"] = true, SURGE = true,
+  ERIKA = true, KOGA = true, SABRINA = true, BLAINE = true,
+  GIOVANNI = true,
+  LORELEI = true, BRUNO = true, AGATHA = true, LANCE = true,
+  FALKNER = true, BUGSY = true, WHITNEY = true, MORTY = true,
+  CHUCK = true, JASMINE = true, PRYCE = true, CLAIR = true,
+  ARCHER = true, ARIANA = true,
+  BRENDAN = true, MAY = true,
+  RED = true,
+}
+
+local FIXED_BOSS_CLASS_PATTERNS = {
+  "LEADER", "ELITE", "CHAMPION", "ADMIN", "BOSS",
+}
+
+local function trainerMetadata(trainerId)
+  local ok, Trainers = pcall(require, "src.core.game3.scripting.trainers")
+  if not ok or not Trainers or type(Trainers.get) ~= "function" then return nil end
+  local okGet, row = pcall(Trainers.get, trainerId)
+  return okGet and row or nil
+end
+
+local function isFixedBoss(trainerClass, trainerId)
+  if isFixedRival(trainerClass, trainerId) then return true end
+  local row = trainerMetadata(math.floor(tonumber(trainerId) or -1))
+  if type(row) ~= "table" then return false end
+  local name = tostring(row.name or row.trainerName or ""):upper()
+  local className = tostring(row.className or row.trainerClassName or ""):upper()
+  if FIXED_BOSS_NAMES[name] then return true end
+  for _, pattern in ipairs(FIXED_BOSS_CLASS_PATTERNS) do
+    if className:find(pattern, 1, true) then return true end
+  end
+  return false
+end
+
 local U32 = 4294967296
 
 local function u16(bytes, offset)
@@ -326,7 +368,7 @@ local function installTrainerHook(mod, pools)
     -- The cartridge has already selected the rival party for the active
     -- starter/region branch. Preserve its species, explicit moves, items, and
     -- abilities even when one or more randomizer modes are enabled.
-    if isFixedRival(trainerClass, trainerId) then
+    if isFixedBoss(trainerClass, trainerId) then
       return next(trainerClass, trainerId, party)
     end
     local mode = speciesMode()
@@ -383,6 +425,7 @@ function Randomizer.install(mod, rom)
     fixedRivals = true,
     fixedRivalClasses = 2,
     fixedRivalIds = 12,
+    fixedBosses = true,
     speciesPool = #pools.species.full,
     scaledPool = #pools.species.none,
     abilityPool = #pools.abilityDefault,
@@ -398,6 +441,7 @@ Randomizer.randomizeSpecies = randomizeSpecies
 Randomizer.randomizeAbility = randomizeAbility
 Randomizer.randomizeMove = randomizeMove
 Randomizer.isFixedRival = isFixedRival
+Randomizer.isFixedBoss = isFixedBoss
 Randomizer.FIXED_RIVAL_CLASSES = FIXED_RIVAL_CLASSES
 Randomizer.FIXED_RIVAL_IDS = FIXED_RIVAL_IDS
 
