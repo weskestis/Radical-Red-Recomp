@@ -39,8 +39,10 @@
   scripts**, **371 particle rows**, and **77 animation backgrounds**. This
   restores real visual/SFX scripts for post-Gen-III moves instead of the host's
   generic IMPACT fallback.
-- Bump the private cache schema to 17 with targeted schema-15/16 upgrades so
-  existing ~216 MiB caches do not need a full rebuild for these small additions.
+- Bump the private cache schema to 18 with targeted schema-15/16/17 upgrades.
+  Existing ~216 MiB world caches are preserved while only the missing sprite
+  coordinates, Fairy badge sheet, expanded cry pack, and battle-animation pack
+  are rebuilt as needed.
 
 ## 0.5.16 — Battle sprite baselines and reliable DexNav controls
 
