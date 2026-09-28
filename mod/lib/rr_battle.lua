@@ -32,6 +32,16 @@ local function scoped(state, category, fn, ...)
   return unpackValues(result, 2, result.n)
 end
 
+-- CFRU move ids for the damaging pivot family. All three deliberately use
+-- EFFECT_BATON_PASS in the ROM, but unlike Baton Pass they must make a normal
+-- switch after damage (no stat-stage/Substitute transfer).
+local RR_PIVOT_MOVE_IDS = {
+  [0x1BA] = "U_TURN",
+  [0x1BB] = "VOLT_SWITCH",
+  [0x2D8] = "FLIP_TURN",
+}
+local RR_BATON_PASS_EFFECT = 127
+
 local function flattenChart(rows, typeCount)
   local main, foresight = {}, {}
   local function append(into, attackType, defenseType, multiplier)
@@ -226,6 +236,8 @@ function Battle.install(rom, deps)
       originalDamageCalc = assert(Damage.calc),
       originalResolveMove = assert(Engine.resolveMove),
       originalResumeChoice = assert(Engine.resumeChoice),
+      originalMoveEndEffects = assert(Engine.moveEndEffects),
+      pivotMoves = {},
     }
     installations[Types] = state
 
@@ -269,6 +281,80 @@ function Battle.install(rom, deps)
       return ok and categoryFromMove(move) or nil
     end
 
+    local function runDamagingPivot(M)
+      if not (M and state.pivotMoves[tonumber(M.mnum)]) then return false end
+      local ad, user, st = M.adapter, M.user, M.st
+      if not (ad and user and st) or st.over then return false end
+      if M.failed or M.noEffect or (M.anim and M.anim.missed)
+          or (tonumber(M.hitsLanded) or 0) <= 0 then
+        return false
+      end
+      if ad.isFainted and ad:isFainted(user) then return false end
+
+      local sideRef = st.double and user.id or user.side
+      local candidates = Engine.switchCandidates(st, sideRef) or {}
+      if #candidates == 0 then return false end
+
+      local pick
+      if type(st.batonPassChooser) == "function" then
+        local ok, value = pcall(st.batonPassChooser, user.side, candidates)
+        if ok then pick = tonumber(value) end
+      elseif st.interactiveChoices and coroutine.running() then
+        -- Reuse the host's already-supported Baton Pass party picker request.
+        -- Mechanics stay a normal switch below; only the UI request is shared.
+        pick = tonumber(coroutine.yield({
+          kind = "baton_pass", side = user.side, battler = user.id,
+          candidates = candidates, rrPivot = true,
+        }))
+      elseif user.side == "enemy" and Engine.mostSuitableMon then
+        pick = Engine.mostSuitableMon(st, ad, sideRef)
+      end
+
+      local chosen = candidates[1]
+      for _, candidate in ipairs(candidates) do
+        if candidate == pick then chosen = candidate break end
+      end
+
+      local nextBattler = Engine.performSwitch(st, ad, sideRef, chosen, {
+        batonPass = false,
+        -- The presentation sequencer already knows this ordering: switch-out,
+        -- "Go!" text, then switch-in. The false batonPass above is what keeps
+        -- U-turn/Volt Switch/Flip Turn from inheriting Baton Pass state.
+        reason = "baton_pass",
+      })
+      if not nextBattler then return false end
+
+      M.user = nextBattler
+      local okSeq, SwitchSeq = pcall(require, "src.core.game3.battle.switch_seq")
+      local okText, LiveBattleText = pcall(require, "src.core.game3.battle.battle_text")
+      if okSeq and SwitchSeq and SwitchSeq.switchInFill
+          and okText and LiveBattleText and LiveBattleText.get
+          and LiveBattleText.SWITCHINMON then
+        local fill = SwitchSeq.switchInFill(st, nextBattler)
+        local text = LiveBattleText.get(LiveBattleText.SWITCHINMON, fill)
+        local id = LiveBattleText.key
+          and LiveBattleText.key(LiveBattleText.SWITCHINMON, fill)
+          or "STRINGID_SWITCHINMON"
+        if ad.pushEvent then
+          ad:pushEvent({ kind = "msg", text = text, wait = 0, id = id })
+        end
+        if ad._say then ad._say(text) end
+      end
+      if Engine.switchInEffects then
+        Engine.switchInEffects(st, ad, nextBattler, {
+          spikes = true, deferIntimidate = true,
+        })
+      end
+      return true
+    end
+
+    Engine.moveEndEffects = function(M)
+      local result = pack(pcall(state.originalMoveEndEffects, M))
+      if not result[1] then error(result[2], 0) end
+      runDamagingPivot(M)
+      return unpackValues(result, 2, result.n)
+    end
+
     Engine.resolveMove = function(user, target, moveId, slot, adapter, st, out, opts)
       local resolvedId = effectiveMoveId(State, user, moveId, st, opts)
       return scoped(state, categoryForId(resolvedId), state.originalResolveMove,
@@ -289,6 +375,16 @@ function Battle.install(rom, deps)
   }
   state.chart = rom:typeChartRows()
   state.categories = {}
+  state.pivotMoves = {}
+  for moveId, name in pairs(RR_PIVOT_MOVE_IDS) do
+    if moveId < (rom.moveCount and rom:moveCount() or 355) then
+      local row = rom:move(moveId)
+      assert(tonumber(row.effect) == RR_BATON_PASS_EFFECT
+          and (tonumber(row.power) or 0) > 0,
+        ("Radical Red %s pivot metadata changed"):format(name))
+      state.pivotMoves[moveId] = name
+    end
+  end
   local categoryCounts = { physical = 0, special = 0, status = 0 }
   local moveCount = 355
   if type(rom.moveCount) == "function" then
@@ -325,6 +421,9 @@ function Battle.install(rom, deps)
     categoryCounts = categoryCounts,
     typeCount = 24,
     fairyTypeId = 23,
+    damagingPivotFix = true,
+    damagingPivotMoves = 3,
+    uTurnMoveId = 0x1BA,
     expandedBattlePlaceholders = placeholderCount,
     expTextPlaceholder = placeholderCount > 0,
   }
