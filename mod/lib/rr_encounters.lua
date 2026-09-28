@@ -297,8 +297,27 @@ end
 
 local function currentHour()
   if RR_Encounters._testHour ~= nil then return RR_Encounters._testHour end
+  if RR_Encounters._overrideHour ~= nil then return RR_Encounters._overrideHour end
   local now = os.date("*t")
   return (type(now) == "table" and tonumber(now.hour)) or 0
+end
+
+function RR_Encounters.setOverrideHour(hour)
+  if hour == nil then
+    RR_Encounters._overrideHour = nil
+  else
+    RR_Encounters._overrideHour = math.floor(tonumber(hour) or 0) % 24
+  end
+  -- Force the installed resolver to rebind the current day/night table on its
+  -- next access even when the table object itself did not change.
+  local Encounters = package.loaded["src.core.game3.encounters"]
+  local state = Encounters and Encounters.__radicalRedTimeTables
+  if state then state.period = nil end
+  return RR_Encounters._overrideHour
+end
+
+function RR_Encounters.overrideHour()
+  return RR_Encounters._overrideHour
 end
 
 local function safeArea(area, speciesCount)
