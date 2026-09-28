@@ -112,6 +112,9 @@ local function markerReady(cache, Profile, opts)
   if expectedSchema >= 17 then
     essentials[#essentials + 1] = root .. "/pokemon/summary/menu_info_rr.rgba"
   end
+  if expectedSchema >= 18 then
+    essentials[#essentials + 1] = root .. "/audio/rr_cry_ids.lua"
+  end
   local essentialsOk = requireFiles(cache, essentials)
   if not essentialsOk then return false end
   local shards = loadLua(cache, root .. "/scripts/rr_shards/manifest.lua")
@@ -416,6 +419,83 @@ local function readFullRom(adapter, Profile, progress)
   return table.concat(parts)
 end
 
+local function leU32(data, off)
+  if type(data) ~= "string" or off < 0 or off + 4 > #data then return nil end
+  local b0, b1, b2, b3 = data:byte(off + 1, off + 4)
+  if not b3 then return nil end
+  return b0 + b1 * 0x100 + b2 * 0x10000 + b3 * 0x1000000
+end
+
+local function gbaOffset(ptr, romSize)
+  ptr = tonumber(ptr)
+  if not ptr or ptr < 0x08000000 then return nil end
+  local off = ptr - 0x08000000
+  if off < 0 or off >= (romSize or 0x02000000) then return nil end
+  return off
+end
+
+local function writeRrCryIds(cache, Profile)
+  local lines = {
+    "-- Generated for Radical Red's DPE cry table.",
+    "-- gCryTable is indexed by internal species id in this build.",
+    "return {",
+  }
+  for species = 1, Profile.SPECIES_COUNT - 1 do
+    lines[#lines + 1] = ("  [%d] = %d,"):format(species, species)
+  end
+  lines[#lines + 1] = "}"
+  lines[#lines + 1] = ""
+  put(cache, Profile.extractRoot() .. "/audio/rr_cry_ids.lua",
+    table.concat(lines, "\n"))
+end
+
+local function extractExpandedAudio(data, cache, Profile)
+  assert(type(data) == "string" and #data == Profile.ROM_SIZE,
+    "Radical Red expanded audio extraction needs the complete validated ROM")
+  local ptr = leU32(data, assert(Profile.OFFSET.cryTablePointerSlot))
+  local cryTable = gbaOffset(ptr, Profile.ROM_SIZE)
+  assert(cryTable,
+    ("Radical Red gCryTable pointer is invalid: %s"):format(tostring(ptr)))
+  assert(cryTable + Profile.SPECIES_COUNT * 12 <= #data,
+    "Radical Red expanded gCryTable runs past the ROM")
+
+  -- DPE's expanded source declares gCryTable[NUM_SPECIES] and places
+  -- Bulbasaur at row SPECIES_BULBASAUR (=1). Validate the exact private ROM
+  -- before trusting the repointed table.
+  local bulba = cryTable + 12
+  local toneType = data:byte(bulba + 1)
+  local wavPtr = leU32(data, bulba + 4)
+  local wavOff = gbaOffset(wavPtr, Profile.ROM_SIZE)
+  assert(toneType and toneType % 8 == 0 and wavOff,
+    "Radical Red expanded cry table failed the Bulbasaur ToneData sentinel")
+
+  local Versions = require("src.import.gba.versions")
+  Versions.AUDIO = copy(assert(Versions.AUDIO,
+    "Radical Red requires FireRed audio metadata"))
+  Versions.AUDIO.cry_table = cryTable
+  Versions.AUDIO.cry_count = Profile.SPECIES_COUNT
+
+  local ExtractAudio = require("src.import.gba.extract_audio")
+  -- extract_audio captures these counts when its module is first required.
+  -- Restamp it in case another launcher path loaded the module before RR.
+  ExtractAudio.CRY_COUNT = Profile.SPECIES_COUNT
+  local ok, indexOrErr = ExtractAudio.run({ data = data }, cache, {
+    sha1 = Profile.SHA1,
+    root = Profile.extractRoot() .. "/audio",
+  })
+  assert(ok, "Radical Red audio extraction failed: " .. tostring(indexOrErr))
+  local index = assert(indexOrErr, "Radical Red audio extractor returned no index")
+  assert(index.cryCount == Profile.SPECIES_COUNT,
+    ("Radical Red cry extraction truncated at %s rows")
+      :format(tostring(index.cryCount)))
+  writeRrCryIds(cache, Profile)
+  return {
+    cryTable = cryTable,
+    cryCount = index.cryCount,
+    bulbasaurToneType = toneType,
+  }
+end
+
 local function runGraphicalAssets(adapter, cache, Profile, progress)
   assert(love and love.image and love.image.newImageData,
     "Radical Red's first launch needs the normal LÖVE graphics runtime")
@@ -431,6 +511,7 @@ local function runGraphicalAssets(adapter, cache, Profile, progress)
   local audioReady = requireFiles(cache, {
     root .. "/audio/index.lua",
     root .. "/audio/samples.bin",
+    root .. "/audio/rr_cry_ids.lua",
   })
   if introReady and namingReady and audioReady then
     progress("rom_assets", 3, 3)
@@ -463,11 +544,7 @@ local function runGraphicalAssets(adapter, cache, Profile, progress)
   progress("rom_assets", 2, 3)
 
   if not audioReady then
-    local okAudio, audioErr = require("src.import.gba.extract_audio").run(source, cache, {
-      sha1 = Profile.SHA1,
-      root = root .. "/audio",
-    })
-    assert(okAudio, "Radical Red audio extraction failed: " .. tostring(audioErr))
+    extractExpandedAudio(data, cache, Profile)
   end
   progress("rom_assets", 3, 3)
 
@@ -601,43 +678,69 @@ function Extractor.ensure(mod, Profile, opts)
     return cachedReport()
   end
 
-  -- Preserve established caches across the two small visual-table upgrades.
-  -- Schema 15 lacked DPE battle sprite coordinates; schema 16 has those but
-  -- still carries FireRed's truncated 128x128 menu-info sheet. RR/CFRU places
-  -- Fairy at tile 0x100, so schema 17 rebuilds only that 128x144 sheet.
-  if Profile.CACHE_SCHEMA == 17 then
-    local fromSchema, needsPicCoords
-    if markerReady(mod.cache, Profile, { schema = 16 }) then
-      fromSchema, needsPicCoords = 16, false
+  -- Preserve established caches across the small table upgrades. Schema 15
+  -- lacked DPE battle-sprite coordinates; schema 16 lacked the CFRU Fairy
+  -- badge row; schema 17 still had FireRed's 388-row cry extraction. Schema 18
+  -- rebuilds only what each older cache is missing, including RR's expanded
+  -- 1,376-row cry table, rather than regenerating the ~216 MiB world cache.
+  if Profile.CACHE_SCHEMA == 18 then
+    local fromSchema, needsPicCoords, needsMenuInfo
+    if markerReady(mod.cache, Profile, { schema = 17 }) then
+      fromSchema, needsPicCoords, needsMenuInfo = 17, false, false
+    elseif markerReady(mod.cache, Profile, { schema = 16 }) then
+      fromSchema, needsPicCoords, needsMenuInfo = 16, false, true
     elseif markerReady(mod.cache, Profile, {
         schema = 15, requirePicCoords = false,
       }) then
-      fromSchema, needsPicCoords = 15, true
+      fromSchema, needsPicCoords, needsMenuInfo = 15, true, true
     end
 
     if fromSchema then
       local Visuals = assert(opts.visuals,
         "Radical Red targeted visual cache upgrader was not loaded")
-      assert(type(Visuals.rebuildMenuInfo) == "function",
-        "Radical Red Fairy badge cache upgrader is unavailable")
-      progress("expanded_tables", 0, needsPicCoords and 2 or 1)
-      local upgradeRom = assert(StreamRom.open(adapter, "firered"))
-      local picCoords
-      if needsPicCoords then
-        picCoords = writePicCoords(upgradeRom, mod.cache, Profile)
-        progress("expanded_tables", 1, 2)
+      if needsMenuInfo then
+        assert(type(Visuals.rebuildMenuInfo) == "function",
+          "Radical Red Fairy badge cache upgrader is unavailable")
       end
-      local menuInfo = Visuals.rebuildMenuInfo(upgradeRom, mod.cache, Profile)
-      upgradeRom:clearCache()
+
+      local total = 1 + (needsPicCoords and 1 or 0)
+        + (needsMenuInfo and 1 or 0)
+      local step = 0
+      progress("expanded_tables", step, total)
+      local picCoords, menuInfo
+
+      if needsPicCoords or needsMenuInfo then
+        local upgradeRom = assert(StreamRom.open(adapter, "firered"))
+        if needsPicCoords then
+          picCoords = writePicCoords(upgradeRom, mod.cache, Profile)
+          step = step + 1
+          progress("expanded_tables", step, total)
+        end
+        if needsMenuInfo then
+          menuInfo = Visuals.rebuildMenuInfo(upgradeRom, mod.cache, Profile)
+          step = step + 1
+          progress("expanded_tables", step, total)
+        end
+        upgradeRom:clearCache()
+      end
+
+      -- Audio extraction needs the raw WaveData payloads. Read the validated
+      -- 32 MiB ROM once, rebuild only /audio, then release it immediately.
+      local audioData = readFullRom(adapter, Profile)
+      local audio = extractExpandedAudio(audioData, mod.cache, Profile)
+      audioData = nil
+      collectgarbage("collect")
+      step = step + 1
+      progress("expanded_tables", step, total)
+
       writeMarker(mod.cache, Profile, { maps = maps })
       assert(markerReady(mod.cache, Profile),
         "Radical Red targeted cache upgrade did not complete")
-      progress("expanded_tables", needsPicCoords and 2 or 1,
-        needsPicCoords and 2 or 1)
       return cachedReport({
         upgradedFromSchema = fromSchema,
         picCoords = picCoords,
         menuInfo = menuInfo,
+        audio = audio,
       })
     end
   end
