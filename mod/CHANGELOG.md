@@ -24,6 +24,21 @@
   The RR cache now adds a separate 128×144 type sheet and maps type 23 to
   `(0,128,32,12)`, fixing Fairy Pokémon and Fairy moves rendering as NORMAL
   on affected desktop builds without disturbing the original 128×128 atlas.
+- Route Radical Red's repurposed item 363 (**Poké Rider**) to the visited-location
+  travel map instead of FireRed's Fame Checker handler, while leaving vanilla
+  FireRed item 363 untouched when the live item is actually Fame Checker.
+- Restore the damaging pivot family: **U-turn, Volt Switch, and Flip Turn** now
+  perform their post-hit switch without inheriting Baton Pass stat stages or
+  Substitute state, and never switch on a miss, immunity, zero-hit result, or
+  when no legal replacement exists.
+- Replace FireRed's 388-row / 411-species cry assumptions with Radical Red's
+  repointed DPE cry table. The cache now extracts all **1,376 ToneData rows**
+  and installs a complete species→cry map, preventing modern encounters from
+  playing silence, another Pokémon's cry, or malformed-rate audio.
+- Follow CFRU's repointed battle-animation tables and extract all **1,004 move
+  scripts**, **371 particle rows**, and **77 animation backgrounds**. This
+  restores real visual/SFX scripts for post-Gen-III moves instead of the host's
+  generic IMPACT fallback.
 - Bump the private cache schema to 17 with targeted schema-15/16 upgrades so
   existing ~216 MiB caches do not need a full rebuild for these small additions.
 
