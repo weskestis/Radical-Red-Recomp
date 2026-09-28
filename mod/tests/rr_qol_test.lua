@@ -132,6 +132,50 @@ function BattleUi.handleInput() BattleUi._stockInput = true return false end
 function BattleUi.draw() BattleUi._stockDraw = true end
 package.loaded["src.core.game3.battle.ui"] = BattleUi
 
+local Audio = {
+  _fanfareActive = false,
+  _mapSong = 321,
+  _bgmGen = 321,
+  _bgmPaused = false,
+  _played = {},
+  _setMapSong = nil,
+}
+local silentSource = { playing = false }
+function silentSource:isPlaying() return self.playing end
+Audio._bgmSource = silentSource
+function Audio.currentSong() return Audio._currentSong or { id = Audio._mapSong } end
+function Audio.playSong(id, opts)
+  Audio._played[#Audio._played + 1] = { id = id, restart = opts and opts.restart }
+  Audio._currentSong = { id = id }
+  return true
+end
+function Audio.setMapSong(id)
+  Audio._mapSong = id
+  Audio._setMapSong = id
+end
+function Audio.update()
+  if Audio._finishFanfare then
+    Audio._fanfareActive = false
+    Audio._finishFanfare = false
+  end
+end
+package.loaded["src.core.game3.audio"] = Audio
+
+local Trainers = {}
+function Trainers.get(id)
+  if id == 999 then
+    return { id = id, name = "LANCE", className = "RR BOSS", class = 1 }
+  end
+  return { id = id, name = "YOUNGSTER", className = "YOUNGSTER", class = 1 }
+end
+package.loaded["src.core.game3.scripting.trainers"] = Trainers
+
+local BattleTransition = {
+  ID = { LORELEI = 12, BRUNO = 13, AGATHA = 14, LANCE = 15, BLUE = 16 },
+}
+function BattleTransition.pickTrainer() return BattleTransition.ID.BLUE end
+package.loaded["src.core.game3.battle_transition"] = BattleTransition
+
 local wrappers, events = {}, {}
 local mod = {
   hooks = {
@@ -181,6 +225,10 @@ assert(report.skillItemIds.timeChanger == 601
     and report.skillItemIds.infiniteRepel == 602
     and report.skillItemIds.pokeVial == 603,
   "Radical Red skill key items were not discovered by name")
+assert(report.fanfareBgmRecovery == true
+    and report.eliteFourVsIntroFix == true
+    and report.battleMusicReturn == true,
+  "v0.5.18 music/VS presentation fixes were not installed")
 assert(store.flags[Qol.FLAG.RUNNING_SHOES] == true,
   "new games did not receive running shoes immediately")
 store.flags[Qol.FLAG.RUNNING_SHOES] = false
@@ -195,11 +243,11 @@ assert(store.flags[Qol.FLAG.RUNNING_SHOES] == true,
 -- L opens the overworld Skills screen without using the battle Team Preview
 -- path. The three earned skills unlock from their real Radical Red key items.
 session.bag.items[601], session.bag.items[602], session.bag.items[603] = true, true, true
-pressed = { l = true }
+local skillPressed = { l = true }
 local skillInput = {
   pressQueue = {},
-  wasPressed = function(_, key) return pressed[key] == true end,
-  isDown = function(_, key) return pressed[key] == true end,
+  wasPressed = function(_, key) return skillPressed[key] == true end,
+  isDown = function(_, key) return skillPressed[key] == true end,
 }
 local skillGame = { phase = "field", session = session, input = skillInput }
 assert(wrappers["core.update"](function() return "updated" end,
@@ -252,6 +300,35 @@ assert(skillState.vialCharges == 6,
 pressed = { b = true }
 Skills.handleInput(skillInput)
 pressed = {}
+
+-- RR can repurpose trainer IDs/classes; the live trainer name must drive the
+-- Elite Four VS portrait instead of falling through to Blue/Gary.
+assert(BattleTransition.pickTrainer({ trainerId = 999, trainerClass = 1 })
+    == BattleTransition.ID.LANCE,
+  "repurposed RR Lance did not resolve the Lance VS intro")
+
+-- Guarded fanfare recovery restarts the same field BGM only when Android has
+-- actually left the queue silent after the fanfare.
+Audio._currentSong = { id = 321 }
+Audio._mapSong, Audio._bgmGen = 321, 321
+Audio._bgmSource.playing = false
+Audio._fanfareActive, Audio._finishFanfare = true, true
+Audio.update(1 / 60)
+Audio.update(1 / 60)
+Audio.update(1 / 60)
+Audio.update(1 / 60)
+local recovered = Audio._played[#Audio._played]
+assert(recovered and recovered.id == 321 and recovered.restart == true,
+  "silent BGM did not recover after a fanfare")
+
+-- League/trainer battle music must restore the map song captured before the
+-- battle BGM replaces it.
+Audio._mapSong = 444
+wrappers["trainer.party"](function(_, _, party) return party end, 1, 999, {})
+Audio._mapSong = 9999
+events["battle.ended"]({ result = "win" })
+assert(Audio._setMapSong == 444 and Audio._mapSong == 444,
+  "battle-end music recovery did not restore the pre-battle map song")
 
 local rows = Qol.buildDexRows(nil, session)
 assert(#rows == 4 and rows[1].name == "Pikachu"
