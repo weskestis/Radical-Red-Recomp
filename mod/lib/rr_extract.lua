@@ -566,8 +566,7 @@ function Extractor.ensure(mod, Profile, opts)
   progress("catalog", 0, 1)
   local maps = rebuildCatalog(adapter, Profile, StreamRom)
   progress("catalog", 1, 1)
-  local ready = markerReady(mod.cache, Profile)
-  if ready then
+  local function cachedReport(extra)
     local shardManifest = assert(loadLua(mod.cache,
       Profile.extractRoot() .. "/scripts/rr_shards/manifest.lua"))
     local multichoice = assert(loadLua(mod.cache,
@@ -582,7 +581,7 @@ function Extractor.ensure(mod, Profile, opts)
         multichoiceLists = multichoiceLists + 1
       end
     end
-    return {
+    local report = {
       cached = true, maps = maps, species = Profile.SPECIES_COUNT,
       moves = Profile.MOVE_COUNT, root = Profile.extractRoot(),
       scriptEntries = shardManifest.entries,
@@ -591,6 +590,34 @@ function Extractor.ensure(mod, Profile, opts)
       customListMenus = customLists.count,
       worldAudit = worldAudit,
     }
+    for key, value in pairs(extra or {}) do report[key] = value end
+    return report
+  end
+
+  if markerReady(mod.cache, Profile) then
+    return cachedReport()
+  end
+
+  -- v0.5.16's only cache-layout addition over the certified v0.5.15 cache is
+  -- the expanded DPE battle-sprite coordinate table.  Do not throw away and
+  -- regenerate ~216 MiB of otherwise-valid private cache data on Android.
+  -- Verify every old required file first, create only pic_coords.lua from the
+  -- validated ROM, then atomically advance the completion marker to schema 16.
+  if Profile.CACHE_SCHEMA == 16 and markerReady(mod.cache, Profile, {
+      schema = 15, requirePicCoords = false,
+    }) then
+    progress("expanded_tables", 0, 1)
+    local upgradeRom = assert(StreamRom.open(adapter, "firered"))
+    local picCoords = writePicCoords(upgradeRom, mod.cache, Profile)
+    upgradeRom:clearCache()
+    writeMarker(mod.cache, Profile, { maps = maps })
+    assert(markerReady(mod.cache, Profile),
+      "Radical Red schema-15 targeted cache upgrade did not complete")
+    progress("expanded_tables", 1, 1)
+    return cachedReport({
+      upgradedFromSchema = 15,
+      picCoords = picCoords,
+    })
   end
 
   local World = assert(opts.world,
