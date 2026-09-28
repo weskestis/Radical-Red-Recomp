@@ -56,18 +56,20 @@ local function requireFiles(cache, files)
   return true
 end
 
-local function markerReady(cache, Profile)
+local function markerReady(cache, Profile, opts)
+  opts = opts or {}
   local root = Profile.extractRoot()
   local marker = loadLua(cache, root .. "/rr_complete.lua")
+  local expectedSchema = opts.schema or Profile.CACHE_SCHEMA
   if type(marker) ~= "table"
-      or marker.schema ~= Profile.CACHE_SCHEMA
+      or marker.schema ~= expectedSchema
       or marker.md5 ~= Profile.MD5
       or marker.species ~= Profile.SPECIES_COUNT
       or marker.moves ~= Profile.MOVE_COUNT
       or marker.maps ~= Profile.MAP_COUNT then
     return false
   end
-  local essentialsOk = requireFiles(cache, {
+  local essentials = {
     root .. "/meta.json",
     root .. "/native/manifest.lua",
     root .. "/warps.lua",
@@ -90,7 +92,6 @@ local function markerReady(cache, Profile)
     root .. "/pokemon/tmhm.lua",
     root .. "/pokemon/tutor.lua",
     root .. "/pokemon/battle_moves.lua",
-    root .. "/pokemon/pic_coords.lua",
     root .. "/pokemon/front/1.rgba",
     root .. "/pokemon/back/1.rgba",
     root .. "/pokemon/icons/1.rgba",
@@ -104,7 +105,11 @@ local function markerReady(cache, Profile)
     root .. "/audio/index.lua",
     root .. "/audio/samples.bin",
     root .. "/naming/manifest.lua",
-  })
+  }
+  if opts.requirePicCoords ~= false then
+    essentials[#essentials + 1] = root .. "/pokemon/pic_coords.lua"
+  end
+  local essentialsOk = requireFiles(cache, essentials)
   if not essentialsOk then return false end
   local shards = loadLua(cache, root .. "/scripts/rr_shards/manifest.lua")
   if type(shards) ~= "table" or shards.version ~= 1
