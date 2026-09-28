@@ -109,6 +109,9 @@ local function markerReady(cache, Profile, opts)
   if opts.requirePicCoords ~= false then
     essentials[#essentials + 1] = root .. "/pokemon/pic_coords.lua"
   end
+  if expectedSchema >= 17 then
+    essentials[#essentials + 1] = root .. "/pokemon/summary/menu_info_rr.rgba"
+  end
   local essentialsOk = requireFiles(cache, essentials)
   if not essentialsOk then return false end
   local shards = loadLua(cache, root .. "/scripts/rr_shards/manifest.lua")
