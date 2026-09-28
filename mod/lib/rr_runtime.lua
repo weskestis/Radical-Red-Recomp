@@ -871,6 +871,13 @@ function Runtime.install(mod, Profile, RR_Encounters)
   Moves._rom = nil
   Moves.loadRomPack(cache)
 
+  -- Force battle animation lookup to reload from the newly mounted RR
+  -- dataset. If the module was touched before this conversion mounted, its
+  -- lazy loader may still be holding FireRed's 355-move pack.
+  local Anim = require("src.core.game3.battle.anim")
+  Anim._pack = nil
+  Anim._packLoaded = false
+
   local Audio = require("src.core.game3.audio")
   local okAudio, audioErr = Audio.install(cache, { root = physicalRoot .. "/audio" })
   assert(okAudio, "Radical Red audio pack failed to install: " .. tostring(audioErr))
@@ -913,6 +920,7 @@ function Runtime.install(mod, Profile, RR_Encounters)
     moves = Profile.MOVE_COUNT,
     saveScope = Profile.ID,
     saveTransferBridge = saveTransferBridge == true,
+    battleAnimPackReset = true,
     expandedCries = true,
     cryCount = Audio._pack.index.cryCount,
     cryMappedSpecies = Profile.SPECIES_COUNT - 1,
