@@ -31,6 +31,10 @@ local Profile = {
   TMHM_WORDS = 4,
   TUTOR_WORDS = 4,
 
+  -- CFRU keeps the GBA animation bytecode format but expands the tables.
+  BATTLE_ANIM_TAG_COUNT = 371,
+  BATTLE_ANIM_BG_COUNT = 77,
+
   RR_WILD_BASE_HEADER_COUNT = 142,
   RR_WILD_DAY_HEADER_COUNT = 83,
   RR_WILD_NIGHT_HEADER_COUNT = 83,
@@ -118,6 +122,14 @@ Profile.OFFSET = {
   -- site. Resolve the pointer from the player's exact ROM; never bake the
   -- relocated table address from another build.
   cryTablePointerSlot = 0x00072114,
+
+  -- CFRU repoints the move-animation and particle/background tables through
+  -- these original FireRed references. Resolve every target from the exact
+  -- RR ROM rather than copying addresses from a different build.
+  moveAnimationsPointerSlot = 0x000725D0,
+  battleAnimPicPointerSlotA = 0x00072914,
+  battleAnimPicPointerSlotB = 0x00072BF8,
+  battleAnimBgPointerSlot = 0x00073960,
 }
 
 local function copy(t)
