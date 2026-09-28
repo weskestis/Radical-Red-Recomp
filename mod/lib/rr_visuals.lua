@@ -263,7 +263,7 @@ end
 local function writeExpandedMenuInfo(rom, cache, Profile)
   local Versions = require("src.import.gba.versions")
   Profile.apply(Versions)
-  local root = Profile.extractRoot() .. "/pokemon/summary/menu_info.rgba"
+  local root = Profile.extractRoot() .. "/pokemon/summary/menu_info_rr.rgba"
   local rgba = rrMenuInfoRgba(rom, Versions)
   local ok, err = cache:write(root, rgba)
   assert(ok ~= false and ok ~= nil,
@@ -326,20 +326,18 @@ local function installFairyTypeBadgeRuntime(Profile)
     if SummaryChrome.__rrFairyMenuInfo then return SummaryChrome.__rrFairyMenuInfo end
     local Dataset = require("src.core.game3.dataset")
     local cache = Dataset.cache and Dataset.cache()
-    local root = Profile.extractRoot() .. "/pokemon/summary/menu_info.rgba"
+    local root = Profile.extractRoot() .. "/pokemon/summary/menu_info_rr.rgba"
     local raw = cache and cache.read and cache:read(root)
     if type(raw) == "string" and #raw >= RR_MENU_INFO_W * RR_MENU_INFO_H * 4 then
       local image = rrImageFromRgba(raw, RR_MENU_INFO_W, RR_MENU_INFO_H)
       if image then
         SummaryChrome.__rrFairyMenuInfo = image
-        SummaryChrome._menuInfo = image
         return image
       end
     end
     return originalImage()
   end
 
-  SummaryChrome.menuInfoImage = expandedImage
   SummaryChrome.drawTypeBadge = function(typeId, x, y)
     if type(typeId) == "string" then
       if typeId:upper() == "FAIRY" then typeId = RR_FAIRY_TYPE end
