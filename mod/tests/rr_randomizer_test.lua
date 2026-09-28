@@ -22,4 +22,21 @@ assert(not Randomizer.isFixedRival(90, 100),
 assert(not Randomizer.isFixedRival(nil, nil),
   "missing trainer identity was mistaken for a rival")
 
-print("PASS rr_randomizer_test: all RR v4.1 rival branches bypass randomization")
+local Trainers = {}
+function Trainers.get(id)
+  local rows = {
+    [414] = { name = "BROCK", className = "LEADER" },
+    [410] = { name = "LORELEI", className = "ELITE FOUR" },
+    [999] = { name = "GIOVANNI", className = "BOSS" },
+    [19] = { name = "YOUNGSTER", className = "YOUNGSTER" },
+  }
+  return rows[id]
+end
+package.loaded["src.core.game3.scripting.trainers"] = Trainers
+
+assert(Randomizer.isFixedBoss(84, 414), "Brock was not protected as a boss")
+assert(Randomizer.isFixedBoss(87, 410), "Elite Four battle was not protected")
+assert(Randomizer.isFixedBoss(1, 999), "Giovanni was not protected by live trainer metadata")
+assert(not Randomizer.isFixedBoss(1, 19), "ordinary trainer was mistaken for a boss")
+
+print("PASS rr_randomizer_test: RR rivals and authored bosses bypass randomization")
