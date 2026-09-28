@@ -577,11 +577,247 @@ local function installExpandedScriptVars(mod)
   return true
 end
 
+
+local function installSaveTransferBridge(Profile)
+  local okImporter, RomImporter = pcall(require, "src.import.RomImporter")
+  local okIo, SaveFileIO = pcall(require, "src.import.SaveFileIO")
+  if not (okImporter and okIo and RomImporter and SaveFileIO) then return false end
+  if RomImporter.__radicalRedSaveBridge then return true end
+
+  local SaveData = require("src.core.SaveData")
+  local SaveSerializer = require("src.core.SaveSerializer")
+  local BASE_VERSION = "firered"
+  local MOD_ID = "radical_red_experience"
+  local CART_ID = Profile.ID
+  local LUA_LIMITS = {
+    maxBytes = 16 * 1024 * 1024,
+    maxNodes = 262144,
+    maxTableEntries = 8192,
+    rootName = "save",
+  }
+
+  local function rrEnabled(version)
+    if version ~= BASE_VERSION then return false end
+    local ok, opts = pcall(SaveData.loadOptions)
+    if not ok or type(opts) ~= "table" then opts = {} end
+    local scope = SaveData.modScope and SaveData.modScope(version) or version
+    local chosen = SaveData.modEnabled and SaveData.modEnabled(opts, MOD_ID, scope)
+    -- This bridge only exists after Radical Red has loaded once in this
+    -- process, so an unanswered toggle means the loader's normal enabled
+    -- default. A deliberate disable immediately returns the launcher to its
+    -- ordinary FireRed save card without restarting.
+    return chosen ~= false
+  end
+
+  local function readSource(source)
+    local t = type(source)
+    if t == "table" or t == "userdata" then
+      if type(source.read) ~= "function" then return nil, "that file could not be read" end
+      local ok, err = source:open("r")
+      if not ok then return nil, "could not open the dropped file: " .. tostring(err) end
+      local bytes, readErr = source:read(source:getSize())
+      source:close()
+      if type(bytes) ~= "string" then
+        return nil, "could not read the dropped file: " .. tostring(readErr)
+      end
+      return bytes
+    end
+    if t ~= "string" then return nil, "no save file was provided" end
+    if source:find("^%s*return[%s{]") then return source end
+    local file = io.open(source, "rb")
+    if file then
+      local bytes = file:read("*a")
+      file:close()
+      if type(bytes) == "string" then return bytes end
+    end
+    if love and love.filesystem and love.filesystem.read then
+      local ok, bytes = pcall(love.filesystem.read, source)
+      if ok and type(bytes) == "string" then return bytes end
+    end
+    return nil, "could not read the save file"
+  end
+
+  local function importOriginalSlot(source)
+    local bytes, readErr = readSource(source)
+    if not bytes then return false, readErr end
+    if not bytes:find("^%s*return[%s{]") then
+      return false, "Radical Red imports use Original save (.lua)."
+    end
+    local save, parseErr = SaveSerializer.decode(bytes, LUA_LIMITS)
+    if type(save) ~= "table" then
+      return false, "That .lua file is not a readable save (" .. tostring(parseErr) .. ")."
+    end
+
+    -- The broken v0.5.18 transfer experiment could stamp the private runtime
+    -- overlay id into an otherwise-valid RR save. Accept it once and normalize
+    -- back to FireRed, which is the public launcher game the conversion owns.
+    if save.version == "radical_red_runtime" then save.version = BASE_VERSION end
+    if save.version ~= BASE_VERSION
+        or (save.generation ~= nil and tonumber(save.generation) ~= 3)
+        or (save.engine ~= nil and save.engine ~= "game3")
+        or type(save.party) ~= "table" then
+      return false, "That .lua file is not a Radical Red / FireRed save."
+    end
+
+    save.meta = type(save.meta) == "table" and save.meta or {}
+    save.meta.cartId = CART_ID
+    save.meta.cartHash = Profile.SHA1
+
+    local slotId = SaveData.createCartSlot(CART_ID)
+    if not slotId then return false, "could not create a Radical Red save slot" end
+    local ok, err = SaveData.writeCartSlot(CART_ID, slotId, save)
+    if not ok then
+      SaveData.deleteCartSlot(CART_ID, slotId)
+      return false, "could not write the imported save: " .. tostring(err)
+    end
+    if not SaveData.readCartSlotSource(CART_ID, slotId) then
+      SaveData.deleteCartSlot(CART_ID, slotId)
+      return false, "the imported save did not read back; nothing was imported"
+    end
+    SaveData.setActiveCartSlot(CART_ID, slotId)
+    return true, slotId
+  end
+
+  -- Keep the FireRed launcher tab selected. The save CARD is redirected to the
+  -- private Radical Red namespace only while the mod is enabled; no
+  -- GameVersion.set("radical_red_runtime") and no fake cart selection occurs.
+  local originalRefreshSlots = RomImporter._refreshSlots
+  RomImporter._refreshSlots = function(self, scope)
+    if rrEnabled(scope) then
+      self.slots[scope] = SaveData.listCartSlots(CART_ID) or {}
+      local opts = SaveData.loadOptions()
+      local reg = opts.cartSlots and opts.cartSlots[CART_ID]
+      self.activeSlot[scope] =
+        reg and (reg.active or (reg.list and reg.list[1])) or nil
+      return
+    end
+    return originalRefreshSlots(self, scope)
+  end
+
+  local originalSelectSlot = RomImporter._selectSlot
+  RomImporter._selectSlot = function(self, scope, id)
+    if rrEnabled(scope) then
+      SaveData.setActiveCartSlot(CART_ID, id)
+      self.activeSlot[scope] = id
+      return
+    end
+    return originalSelectSlot(self, scope, id)
+  end
+
+  local originalNewSlot = RomImporter._newSlot
+  RomImporter._newSlot = function(self, scope)
+    if rrEnabled(scope) then
+      local id = SaveData.createCartSlot(CART_ID)
+      if id then SaveData.setActiveCartSlot(CART_ID, id) end
+      self:_refreshSlots(scope)
+      self.activeSlot[scope] = id
+      self.slotScroll[scope] = math.huge
+      return
+    end
+    return originalNewSlot(self, scope)
+  end
+
+  local originalDeleteSlot = RomImporter._deleteSlot
+  RomImporter._deleteSlot = function(self, scope, id)
+    if rrEnabled(scope) then
+      if self.workState == "working" then return end
+      local ok, err = SaveData.deleteCartSlot(CART_ID, id)
+      if ok then
+        self:_refreshSlots(scope)
+        self.saveNotice[scope] = { ok = true, text = "Deleted " .. tostring(id) .. "." }
+      else
+        self.saveNotice[scope] = { ok = false, text = tostring(err) }
+      end
+      return
+    end
+    return originalDeleteSlot(self, scope, id)
+  end
+
+  local originalCommitRename = RomImporter._commitRename
+  RomImporter._commitRename = function(self)
+    local row = self._rename
+    if row and rrEnabled(row.version) then
+      self._rename = nil
+      if self._disarmTextInput then self:_disarmTextInput() end
+      SaveData.renameCartSlot(CART_ID, row.id, row.text)
+      self:_refreshSlots(row.version)
+      return
+    end
+    return originalCommitRename(self)
+  end
+
+  local originalImport = RomImporter._importSave
+  RomImporter._importSave = function(self, version, source, force)
+    if rrEnabled(version) then
+      if self.workState == "working" then return end
+      -- Do not mutate self.tab here: importing an RR save is a save operation,
+      -- not a game-selection operation.
+      local ok, slotOrErr = importOriginalSlot(source)
+      if ok then
+        self:_refreshSlots(version)
+        self.activeSlot[version] = slotOrErr
+        self.slotScroll[version] = math.huge
+        self.saveNotice[version] = {
+          ok = true, text = "Imported Radical Red save into " .. tostring(slotOrErr) .. ".",
+        }
+      else
+        self.saveNotice[version] = { ok = false, text = tostring(slotOrErr) }
+      end
+      return
+    end
+    return originalImport(self, version, source, force)
+  end
+
+  local originalExportLua = SaveFileIO.exportLuaSlot
+  SaveFileIO.exportLuaSlot = function(version, slotId, cartId)
+    if cartId == nil and rrEnabled(version) then cartId = CART_ID end
+    return originalExportLua(version, slotId, cartId)
+  end
+
+  local originalExportActive = SaveFileIO.exportActiveSlot
+  SaveFileIO.exportActiveSlot = function(version)
+    version = version or require("src.core.GameVersion").get()
+    if rrEnabled(version) then
+      return false, "Radical Red exports use Original save (.lua)."
+    end
+    return originalExportActive(version)
+  end
+
+  -- The stock editor mounts FireRed's generated dataset. Letting it open a
+  -- Radical Red slot would display/validate expanded species against the wrong
+  -- tables. Keep the button harmless until the editor can mount this mod cache.
+  local originalNew = RomImporter.new
+  RomImporter.new = function(onComplete, opts)
+    local self = originalNew(onComplete, opts)
+    if self and self.onEditSave then
+      local edit = self.onEditSave
+      self.onEditSave = function(version, slotId)
+        if rrEnabled(version) then
+          self.saveNotice[version] = {
+            ok = false,
+            text = "Edit save is disabled for Radical Red saves; Import/Export remain available.",
+          }
+          return
+        end
+        return edit(version, slotId)
+      end
+    end
+    return self
+  end
+
+  RomImporter.__radicalRedSaveBridge = {
+    version = BASE_VERSION,
+    cartId = CART_ID,
+  }
+  return true
+end
+
 function Runtime.install(mod, Profile, RR_Encounters)
   assert(mod and mod.game, "Radical Red requires the live Game3 service")
   local Versions = require("src.import.gba.versions")
   Profile.apply(Versions)
   local overlay = installCacheOverlay(mod, Profile)
+  local saveTransferBridge = installSaveTransferBridge(Profile)
   local physicalRoot = Profile.runtimeRoot(
     (mod.manifest and mod.manifest.id) or "radical_red_experience")
 
@@ -655,6 +891,7 @@ function Runtime.install(mod, Profile, RR_Encounters)
     species = Profile.SPECIES_COUNT,
     moves = Profile.MOVE_COUNT,
     saveScope = Profile.ID,
+    saveTransferBridge = saveTransferBridge == true,
     expandedScriptVars = expandedScriptVars,
     trueMapBounds = true,
     mapLayoutsAudited = layoutCount,
