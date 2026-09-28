@@ -8,6 +8,10 @@ local session = {
   modData = {},
   trainerId = 123,
   secretId = 456,
+  party = {
+    { species = 25, level = 10, hp = 20, maxHp = 30,
+      moves = { 84 }, pp = { 5 }, maxPp = { 15 } },
+  },
 }
 
 local Flags = {}
@@ -66,7 +70,38 @@ function Bag.has(bag, id)
 end
 
 local ItemsData = {}
-function ItemsData.displayName(id) return "ITEM_" .. tostring(id) end
+local skillItems = {
+  [601] = { name = "Time Changer" },
+  [602] = { name = "Infinite Repel" },
+  [603] = { name = "PokéVial" },
+}
+function ItemsData.ensureLoaded() return skillItems end
+function ItemsData.displayName(id)
+  return (skillItems[id] and skillItems[id].name) or ("ITEM_" .. tostring(id))
+end
+
+local Player = { biking = false }
+function Player.canDash() return true end
+function Player.update(_, input)
+  Player._sawRun = input and input.isDown and input:isDown("b") or false
+  return Player._sawRun
+end
+package.loaded["src.core.game3.player"] = Player
+
+local Party = {}
+function Party.healAll(party)
+  for _, mon in ipairs(party or {}) do
+    if mon.maxHp then mon.hp = mon.maxHp end
+    mon.status, mon.sleep = nil, nil
+    if mon.moves and mon.pp and mon.maxPp then
+      for i = 1, #mon.moves do mon.pp[i] = mon.maxPp[i] or mon.pp[i] end
+    end
+  end
+end
+package.loaded["src.core.game3.party"] = Party
+
+local RR_Encounters = { hour = nil }
+function RR_Encounters.setOverrideHour(hour) RR_Encounters.hour = hour end
 
 local Types = {}
 function Types.name(id) return id == 13 and "ELECTRIC" or "NORMAL" end
@@ -132,11 +167,20 @@ local report = Qol.install(mod, {
   startWildBattle = startWildBattle,
   getStore = function() return store end,
   getSession = function() return session end,
+  RR_Encounters = RR_Encounters,
 })
 
 assert(report.runningShoes and report.dexAll and report.teamPreview and report.ezCatch)
 assert(report.dexNavReliableFieldEdge == true
     and report.dexNavFieldSelect == true)
+assert(report.skillsMenu == true and report.autoRunSkill == true
+    and report.timeChangerSkill == true and report.infiniteRepelSkill == true
+    and report.pokeVialSkill == true,
+  "the four-skill L menu was not installed")
+assert(report.skillItemIds.timeChanger == 601
+    and report.skillItemIds.infiniteRepel == 602
+    and report.skillItemIds.pokeVial == 603,
+  "Radical Red skill key items were not discovered by name")
 assert(store.flags[Qol.FLAG.RUNNING_SHOES] == true,
   "new games did not receive running shoes immediately")
 store.flags[Qol.FLAG.RUNNING_SHOES] = false
@@ -147,6 +191,67 @@ store.flags[Qol.FLAG.RUNNING_SHOES] = false
 events["save.created"]()
 assert(store.flags[Qol.FLAG.RUNNING_SHOES] == true,
   "new games were not repaired before their first step")
+
+-- L opens the overworld Skills screen without using the battle Team Preview
+-- path. The three earned skills unlock from their real Radical Red key items.
+session.bag.items[601], session.bag.items[602], session.bag.items[603] = true, true, true
+pressed = { l = true }
+local skillInput = {
+  pressQueue = {},
+  wasPressed = function(_, key) return pressed[key] == true end,
+  isDown = function(_, key) return pressed[key] == true end,
+}
+local skillGame = { phase = "field", session = session, input = skillInput }
+assert(wrappers["core.update"](function() return "updated" end,
+    skillGame, 1 / 60) == "updated")
+assert(Stack.pushed[#Stack.pushed].id == "rr_skills",
+  "L did not open the Radical Red Skills menu")
+local Skills = Stack.pushed[#Stack.pushed].screen
+
+-- Auto Run: no physical B means run; holding B temporarily walks.
+pressed = { a = true }
+Skills.handleInput(skillInput)
+pressed = {}
+local runInput = {
+  isDown = function(_, key) return false end,
+  wasPressed = function() return false end,
+}
+Player.update(skillGame, runInput)
+assert(Player._sawRun == true, "Auto Run did not run without B")
+runInput.isDown = function(_, key) return key == "b" end
+Player.update(skillGame, runInput)
+assert(Player._sawRun == false, "Auto Run did not let B temporarily walk")
+
+-- Time Changer uses the RR day/dusk/night clock override.
+Skills.cursor = 2
+pressed = { a = true }
+Skills.handleInput(skillInput)
+assert(Skills.mode == "time", "Time Changer did not open")
+Skills.timeCursor = 4
+Skills.handleInput(skillInput)
+assert(RR_Encounters.hour == 22 and Skills.mode == "main",
+  "Time Changer did not apply NIGHT")
+
+-- Infinite Repel suppresses only the normal encounter.roll hook.
+Skills.cursor = 3
+Skills.handleInput(skillInput)
+local ordinary = wrappers["encounter.roll"](function() return "WILD" end, {}, {})
+assert(ordinary == nil, "Infinite Repel did not suppress walking encounters")
+
+-- PokéVial full-heals, spends one of six charges, and a normal full-party heal
+-- refills the Vial without the Vial refilling itself.
+Skills.cursor = 4
+Skills.handleInput(skillInput)
+local skillState = session.modData.radical_red_experience.skills
+assert(session.party[1].hp == 30 and session.party[1].pp[1] == 15
+    and skillState.vialCharges == 5,
+  "PokéVial did not heal the party and spend exactly one charge")
+Party.healAll(session.party)
+assert(skillState.vialCharges == 6,
+  "a normal full-party heal did not refill PokéVial to six uses")
+pressed = { b = true }
+Skills.handleInput(skillInput)
+pressed = {}
 
 local rows = Qol.buildDexRows(nil, session)
 assert(#rows == 4 and rows[1].name == "Pikachu"
