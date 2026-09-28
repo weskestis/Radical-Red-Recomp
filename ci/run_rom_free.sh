@@ -34,6 +34,8 @@ mod_tests=(
   rr_mechanics_test.lua
   rr_natives_test.lua
   rr_qol_test.lua
+  rr_randomizer_test.lua
+  rr_save_transfer_test.lua
   rr_story_test.lua
 )
 for test_file in "${mod_tests[@]}"; do
