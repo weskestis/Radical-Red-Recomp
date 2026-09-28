@@ -376,12 +376,16 @@ do
   local function auditScript(script, seen, out)
     if type(script) ~= "table" then return end
     seen = seen or {}
-    out = out or { sound = false, visual = false, ops = 0 }
+    out = out or { sound = false, visual = false, ops = 0, soundIds = {} }
     if seen[script] then return out end
     seen[script] = true
     for _, op in ipairs(script) do
       out.ops = out.ops + 1
-      if SOUND_OP[op.op] then out.sound = true end
+      if SOUND_OP[op.op] then
+        out.sound = true
+        local id = tonumber(op.se)
+        if id ~= nil then out.soundIds[id] = true end
+      end
       if VISUAL_OP[op.op] then out.visual = true end
       for _, key in ipairs({ "label", "label1", "label2" }) do
         local label = op[key]
@@ -407,6 +411,20 @@ do
       name .. " still resolves to no real visual animation")
     assert(audit.sound,
       name .. " still resolves to an animation with no sound command")
+    local Audio = require("src.core.game3.audio")
+    local songs = assert(Audio._pack and Audio._pack.index
+        and Audio._pack.index.songs,
+      "RR audio pack is unavailable while auditing move SFX")
+    local referenced = 0
+    for se in pairs(audit.soundIds) do
+      referenced = referenced + 1
+      local row = songs[se] or songs[tostring(se)]
+      assert(row and row.missing ~= true,
+        ("%s animation references uncached SFX/song id %d")
+          :format(name, se))
+    end
+    assert(referenced > 0,
+      name .. " animation had no concrete SFX id to validate")
     local first = script[1]
     local generic = first and first.op == "loadspritegfx"
       and first.tag == "IMPACT" and first.tag_idx == 135
