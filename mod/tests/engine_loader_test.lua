@@ -376,7 +376,9 @@ do
   local function auditScript(script, seen, out)
     if type(script) ~= "table" then return end
     seen = seen or {}
-    out = out or { sound = false, visual = false, ops = 0, soundIds = {} }
+    out = out or {
+      sound = false, visual = false, ops = 0, soundIds = {}, unresolved = {},
+    }
     if seen[script] then return out end
     seen[script] = true
     for _, op in ipairs(script) do
@@ -387,6 +389,14 @@ do
         if id ~= nil then out.soundIds[id] = true end
       end
       if VISUAL_OP[op.op] then out.visual = true end
+      if (op.op == "createvisualtask" or op.op == "createsoundtask")
+          and type(op.task) == "string" and op.task:match("^0x") then
+        out.unresolved[#out.unresolved + 1] = op.op .. ":" .. op.task
+      elseif op.op == "createsprite"
+          and op.template == nil and op.callback == nil then
+        out.unresolved[#out.unresolved + 1] =
+          "createsprite:" .. tostring(op.tag or "<no tag>")
+      end
       for _, key in ipairs({ "label", "label1", "label2" }) do
         local label = op[key]
         if label ~= nil and pack.labels[label] then
@@ -411,6 +421,9 @@ do
       name .. " still resolves to no real visual animation")
     assert(audit.sound,
       name .. " still resolves to an animation with no sound command")
+    assert(#audit.unresolved == 0,
+      name .. " still depends on unresolved CFRU animation callbacks/tasks: "
+        .. table.concat(audit.unresolved, ", "))
     local Audio = require("src.core.game3.audio")
     local songs = assert(Audio._pack and Audio._pack.index
         and Audio._pack.index.songs,
