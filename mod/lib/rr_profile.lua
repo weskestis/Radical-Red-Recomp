@@ -17,7 +17,7 @@ local Profile = {
   -- Bump whenever the private-ROM cache layout or a decoded RR structure
   -- changes.  A mismatched marker makes the mod rebuild from the player's
   -- validated import instead of ever mixing old/vanilla cache data.
-  CACHE_SCHEMA = 17,
+  CACHE_SCHEMA = 18,
 
   SPECIES_COUNT = 1376,
   MOVE_COUNT = 1004,
@@ -113,6 +113,11 @@ Profile.OFFSET = {
   -- panel, producing the stretched/overlapping party screen.
   partyMenuSlotTilemap = 0x045A180,
   partyMenuSlotEmptyTilemap = 0x045A210,
+
+  -- DPE/Radical Red repoints gCryTable through this original FireRed pointer
+  -- site. Resolve the pointer from the player's exact ROM; never bake the
+  -- relocated table address from another build.
+  cryTablePointerSlot = 0x00072114,
 }
 
 local function copy(t)
