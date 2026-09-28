@@ -109,7 +109,7 @@ return function(mod)
       getFollowerState = function() return Natives._state.follower end,
     })
     step("runtime", 7, 9)
-    reports.qol = Qol.install(mod)
+    reports.qol = Qol.install(mod, { RR_Encounters = Encounters })
     step("runtime", 8, 9)
     step("runtime", 9, 9)
     return reports
