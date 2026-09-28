@@ -1576,6 +1576,65 @@ local function modifyFacilityDrop(deps, item)
   return item
 end
 
+local function wishingPieceId(deps)
+  if state.wishingPieceId ~= nil then
+    return state.wishingPieceId ~= false and state.wishingPieceId or nil
+  end
+  local id
+  if deps.ItemsData and deps.ItemsData.toNumericId then
+    local ok, value = pcall(deps.ItemsData.toNumericId, "WISHING_PIECE")
+    if ok then id = tonumber(value) end
+  end
+  if not id and deps.ItemsData and deps.ItemsData.ensureLoaded then
+    local ok, items = pcall(deps.ItemsData.ensureLoaded)
+    if ok and type(items) == "table" then
+      for itemId, row in pairs(items) do
+        local name = type(row) == "table" and tostring(row.name or "") or ""
+        name = name:gsub("é", "e"):gsub("É", "E")
+          :upper():gsub("[^A-Z0-9]", "")
+        if name == "WISHINGPIECE" then
+          id = tonumber(itemId)
+          break
+        end
+      end
+    end
+  end
+  state.wishingPieceId = id or false
+  return id
+end
+
+local function hasWishingPiece(deps)
+  local session = sessionOf(deps)
+  local id = wishingPieceId(deps)
+  return id ~= nil and session and session.bag
+    and deps.Bag and deps.Bag.has
+    and deps.Bag.has(session.bag, id, 1) == true
+end
+
+local function reactivateDenWithWishingPiece(deps, ctx, mapIndex)
+  if mapIndex == nil or not getFlag(deps, ctx, FIRST_RAID_BATTLE_FLAG + mapIndex) then
+    return true, false
+  end
+  local session = sessionOf(deps)
+  local id = wishingPieceId(deps)
+  if not (id and session and session.bag and deps.Bag
+      and deps.Bag.has and deps.Bag.remove
+      and deps.Bag.has(session.bag, id, 1)) then
+    return false, false
+  end
+  if not deps.Bag.remove(session.bag, id, 1) then return false, false end
+
+  -- RR's stable den RNG includes this save variable specifically so a
+  -- Wishing Piece advances the den to the next deterministic encounter instead
+  -- of immediately recreating the raid that was just cleared.
+  setVar(deps, ctx, VAR.RAID_NUMBER_OFFSET,
+    (getVar(deps, ctx, VAR.RAID_NUMBER_OFFSET) + 1) % 0x10000)
+  setFlag(deps, ctx, FIRST_RAID_BATTLE_FLAG + mapIndex, false)
+  state.current, state.foe, state.selectedPartner = nil, nil, nil
+  state.stars, state.stable = nil, nil
+  return true, true
+end
+
 local function mapHasAnyRaid(rom, mapIndex)
   state.mapHasRaid = state.mapHasRaid or {}
   if state.mapHasRaid[mapIndex] ~= nil then return state.mapHasRaid[mapIndex] end
@@ -1643,14 +1702,24 @@ local function buildHandlers(deps, rom)
   H[Raids.SPECIAL.AVAILABLE] = function(ctx)
     local mapIndex = currentMapIndex(deps)
     local done = mapIndex ~= nil and getFlag(deps, ctx, FIRST_RAID_BATTLE_FLAG + mapIndex)
+    local facility = getFlag(deps, ctx, FLAG.BATTLE_FACILITY)
     local raid = not done and determineRaid(deps, rom, ctx) or nil
-    local available = not done and (raid ~= nil or getFlag(deps, ctx, FLAG.BATTLE_FACILITY))
+    -- A cleared den is still interactable when the player owns a Wishing
+    -- Piece. The actual item spend is deferred to INTRO so merely probing the
+    -- den's availability cannot consume inventory.
+    local available = facility or (not done and raid ~= nil)
+      or (done and hasWishingPiece(deps))
     setResult(deps, ctx, available and 1 or 0)
     return false, available and 1 or 0
   end
 
   H[Raids.SPECIAL.INTRO] = function(ctx, adapters)
     setResult(deps, ctx, 0)
+    local mapIndex = currentMapIndex(deps)
+    if not getFlag(deps, ctx, FLAG.BATTLE_FACILITY) then
+      local ok = reactivateDenWithWishingPiece(deps, ctx, mapIndex)
+      if not ok then return false end
+    end
     local raid = determineRaid(deps, rom, ctx)
     if not raid then return false end
     return choosePartner(deps, rom, ctx, adapters, raid)
@@ -1787,6 +1856,7 @@ function Raids.install(mod, rom, overrides)
     nativeCallbacks = 1,
     battleHooks = battleHooks,
     romBacked = true,
+    wishingPieceRespawn = true,
     mapSections = KANTO_MAPSEC_COUNT,
   }
 end
