@@ -335,6 +335,15 @@ assert(exports.visualReport.stuffulGraphicsId == 0x016E)
 assert(exports.visualReport.playerPaletteTag == 0x1100)
 assert(exports.visualReport.momPaletteTag == 0x1168)
 
+-- Fairy lives below the vanilla type-icon sheet in the source ROM.
+do
+  local Dataset = require("src.core.game3.dataset")
+  local bytes = Dataset.cache():read(
+    "data/generated/gba/pokemon/summary/menu_info_rr.rgba")
+  assert(type(bytes) == "string" and #bytes == 128 * 144 * 4,
+    "expanded Fairy type sheet was not preserved")
+end
+
 -- Battle sprites must use RR's expanded DPE coordinates rather than the
 -- still-linked FireRed table. The status tile remains fixed while the active
 -- battler keeps its menu bounce.
