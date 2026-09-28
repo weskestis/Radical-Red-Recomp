@@ -55,8 +55,8 @@ echo "== Strict modkit gates =="
 echo "== Reproducible package =="
 package_tmp="$(mktemp -d "${RUNNER_TEMP:-/tmp}/rr-package.XXXXXX")"
 trap 'rm -rf -- "$package_tmp"' EXIT
-first="$package_tmp/Radical-Red-0.5.13-a.zip"
-second="$package_tmp/Radical-Red-0.5.13-b.zip"
+first="$package_tmp/Radical-Red-0.5.19-a.zip"
+second="$package_tmp/Radical-Red-0.5.19-b.zip"
 (
   cd "$engine_dir"
   SOURCE_DATE_EPOCH=0 MODKIT_LUAJIT="$luajit_bin" \
