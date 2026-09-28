@@ -235,6 +235,12 @@ assert(exports.battleReport.expTextPlaceholder == true)
 assert(exports.sourceReport.speciesCount == 1376)
 assert(exports.sourceReport.moveCount == 1004)
 assert(exports.extractReport.species == 1376)
+assert(exports.extractReport.battleAnims
+    and exports.extractReport.battleAnims.moveCount == 1004,
+  "RR battle-animation extraction did not cover all 1004 moves")
+assert(exports.extractReport.battleAnims.tables
+    and exports.extractReport.battleAnims.tables.uTurnScript,
+  "RR expanded animation table sentinels were not preserved")
 assert(type(exports.extractReport.scriptEntries) == "table")
 assert(exports.extractReport.scriptEntries.events == 425)
 assert(exports.extractReport.scriptEntries.scripts > 0)
@@ -339,6 +345,74 @@ assert(exports.visualReport.usedPaletteCount == 397)
 assert(exports.visualReport.stuffulGraphicsId == 0x016E)
 assert(exports.visualReport.playerPaletteTag == 0x1100)
 assert(exports.visualReport.momPaletteTag == 0x1168)
+
+-- Post-Gen-III moves must use RR/CFRU's real animation and sound scripts,
+-- never the host's generic IMPACT fallback. Follow calls/gotos into the
+-- generated label table because many move rows are only a tiny dispatcher.
+do
+  local Dataset = require("src.core.game3.dataset")
+  local cache = Dataset.cache()
+  local path = "data/generated/gba/pokemon/battle_anims/pack.lua"
+  local source = assert(cache:read(path), "RR battle animation pack is missing")
+  local chunk, loadErr = load(source, "@" .. path, "t", {})
+  assert(chunk, "RR battle animation pack would not load: " .. tostring(loadErr))
+  local okPack, pack = pcall(chunk)
+  assert(okPack and type(pack) == "table"
+      and type(pack.moves) == "table" and type(pack.labels) == "table",
+    "RR battle animation pack is invalid")
+
+  local SOUND_OP = {
+    playse = true, playsewithpan = true, panse = true,
+    loopsewithpan = true, waitplaysewithpan = true,
+    createsoundtask = true,
+  }
+  local VISUAL_OP = {
+    createsprite = true, createvisualtask = true, loadspritegfx = true,
+    fadetobg = true, fadetobgfromset = true, changebg = true,
+    monbg = true, monbg_static = true, setalpha = true,
+  }
+
+  local function auditScript(script, seen, out)
+    if type(script) ~= "table" then return end
+    seen = seen or {}
+    out = out or { sound = false, visual = false, ops = 0 }
+    if seen[script] then return out end
+    seen[script] = true
+    for _, op in ipairs(script) do
+      out.ops = out.ops + 1
+      if SOUND_OP[op.op] then out.sound = true end
+      if VISUAL_OP[op.op] then out.visual = true end
+      for _, key in ipairs({ "label", "label1", "label2" }) do
+        local label = op[key]
+        if label ~= nil and pack.labels[label] then
+          auditScript(pack.labels[label], seen, out)
+        end
+      end
+    end
+    return out
+  end
+
+  local sentinels = {
+    [0x1BA] = "U-turn",
+    [0x1CD] = "Fairy Wind",
+    [0x1CF] = "Play Rough",
+    [0x1D2] = "Dazzling Gleam",
+  }
+  for id, name in pairs(sentinels) do
+    local script = assert(pack.moves[id],
+      name .. " has no RR/CFRU move-animation row")
+    local audit = auditScript(script)
+    assert(audit.ops > 1 and audit.visual,
+      name .. " still resolves to no real visual animation")
+    assert(audit.sound,
+      name .. " still resolves to an animation with no sound command")
+    local first = script[1]
+    local generic = first and first.op == "loadspritegfx"
+      and first.tag == "IMPACT" and first.tag_idx == 135
+    assert(not generic,
+      name .. " still resolves to the host generic IMPACT fallback")
+  end
+end
 
 -- Expanded DPE cries must be addressed by live internal species id. The
 -- previous stock FireRed extractor stopped its cry map at species 411, which
