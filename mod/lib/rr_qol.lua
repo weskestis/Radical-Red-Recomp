@@ -1443,6 +1443,92 @@ local function installTeamPreview(deps)
 end
 
 
+
+local POKE_RIDER_ITEM_ID = 363 -- FireRed's Fame Checker slot, repurposed by RR.
+
+local function installPokeRider(mod, deps)
+  if Qol._pokeRiderInstalled then return true end
+  if not (mod and mod.hooks and mod.hooks.wrap and deps.ItemsData) then return false end
+
+  local function numericId(id)
+    if deps.ItemsData.toNumericId then
+      local ok, value = pcall(deps.ItemsData.toNumericId, id)
+      if ok and tonumber(value) then return tonumber(value) end
+    end
+    return tonumber(id)
+  end
+
+  local function isPokeRider(id)
+    if numericId(id) ~= POKE_RIDER_ITEM_ID then return false end
+    if not deps.ItemsData.displayName then return false end
+    local ok, display = pcall(deps.ItemsData.displayName, id)
+    return ok and normalizedItemName(display) == "POKERIDER"
+  end
+
+  local function leadMon(session)
+    for _, mon in ipairs((session and session.party) or {}) do
+      if type(mon) == "table" and not mon.isEgg and not mon.egg
+          and (tonumber(mon.hp) or 1) > 0 then
+        return mon
+      end
+    end
+    return session and session.party and session.party[1] or nil
+  end
+
+  local function openRider(game, session)
+    local Field = require("src.core.game3.field")
+    local RegionMap = require("src.ui.game3.region_map")
+    Field.locked = true
+    RegionMap.show({
+      session = session,
+      mode = "fly",
+      onPick = function(section)
+        local ok, err = pcall(Field.flyTo, section, leadMon(session))
+        if not ok then
+          Field.locked = false
+          error(err, 0)
+        end
+      end,
+      onClose = function()
+        Field.locked = false
+      end,
+    })
+    return true
+  end
+
+  mod.hooks:wrap("item.use",
+    function(next, game, battle, id, target, list, moveIndex, picker)
+      -- Never reinterpret the numeric FireRed slot on its own. The live RR
+      -- item name is the disambiguator, so vanilla FireRed's real Fame Checker
+      -- remains untouched when this conversion is not active.
+      if battle ~= nil or not isPokeRider(id) then
+        return next(game, battle, id, target, list, moveIndex, picker)
+      end
+
+      local session = (game and game.session) or sessionOf(deps)
+      if not session then return next(game, battle, id, target, list, moveIndex, picker) end
+
+      local function open()
+        return openRider(game, session)
+      end
+      local okUse, ItemUse = pcall(require, "src.core.game3.item_use")
+      if okUse and ItemUse and ItemUse.setUpOnFieldCallback
+          and ItemUse.setUpOnFieldCallback(open) then
+        -- Reuse the stock field-item exit choreography: Bag and Start close,
+        -- the field fades back in, then runOnFieldCallback opens the Rider map.
+        return true, "escape", nil
+      end
+
+      -- Registered-key-item or other direct field use: there is no Bag to
+      -- dismiss, so opening the Rider map immediately is the correct path.
+      open()
+      return true, "poke_rider", nil
+    end, 1200)
+
+  Qol._pokeRiderInstalled = true
+  return true
+end
+
 local function installFanfareRecovery()
   local okAudio, Audio = pcall(require, "src.core.game3.audio")
   if not okAudio or not Audio or Audio.__rrFanfareRecovery then return okAudio end
@@ -1554,6 +1640,7 @@ function Qol.install(mod, overrides)
   Qol._deps = deps
   local dexNav = installDexNav(mod, deps)
   local skills = installSkills(mod, deps)
+  local pokeRider = installPokeRider(mod, deps)
 
   -- New games can reload the already-selected start map, which emits
   -- save.created/map.reloaded rather than map.entered.  Cover every adoption
@@ -1591,6 +1678,8 @@ function Qol.install(mod, overrides)
     infiniteRepelSkill = skills ~= nil,
     pokeVialSkill = skills ~= nil,
     skillItemIds = skills and skills.itemIds() or {},
+    pokeRider = pokeRider == true,
+    pokeRiderItemId = POKE_RIDER_ITEM_ID,
     fanfareBgmRecovery = fanfareRecovery == true,
     eliteFourVsIntroFix = vsIntroFix == true,
     battleMusicReturn = battleMusicReturn == true,
