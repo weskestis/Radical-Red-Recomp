@@ -678,7 +678,9 @@ local function installDexNav(mod, deps)
     if okBattle and Battle and Battle.isActive and Battle.isActive() then
       return false
     end
-    if not (flagOn(deps, Qol.FLAG.DEX_NAV) or Qol.dexAllEnabled(deps)) then
+    -- DexAll reveals encounter information; it does not grant the DexNav.
+    -- The field shortcut only exists after the actual DexNav story unlock.
+    if not flagOn(deps, Qol.FLAG.DEX_NAV) then
       return false
     end
     local session = game.session or sessionOf(deps)
@@ -851,8 +853,9 @@ local function installDexNav(mod, deps)
     local base = next(game, items)
     if type(base) ~= "table" then base = items end
     local out, inserted, already = {}, false, false
+    -- DexAll is disclosure-only. Do not make the Start-menu DexNav appear
+    -- before the cartridge's real DexNav unlock flag is earned.
     local unlocked = flagOn(deps, Qol.FLAG.DEX_NAV)
-      or Qol.dexAllEnabled(deps)
     if not unlocked then return base or {} end
     for _, item in ipairs(base or {}) do
       if item.id == "rr_dexnav" then already = true end
