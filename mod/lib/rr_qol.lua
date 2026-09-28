@@ -889,6 +889,452 @@ local function installDexNav(mod, deps)
   return DexNav
 end
 
+
+local SKILL_SCHEMA = 1
+local SKILL_ITEM_KEYS = {
+  timeChanger = "TIMECHANGER",
+  infiniteRepel = "INFINITEREPEL",
+  pokeVial = "POKEVIAL",
+}
+local TIME_CHOICES = {
+  { key = "current", label = "CURRENT TIME", hour = nil },
+  { key = "day", label = "DAY", hour = 12 },
+  { key = "dusk", label = "DUSK", hour = 18 },
+  { key = "night", label = "NIGHT", hour = 22 },
+}
+
+local function skillState(session)
+  if type(session) ~= "table" then
+    return {
+      schema = SKILL_SCHEMA, unlocked = { autoRun = true },
+      autoRun = false, infiniteRepel = false, timeMode = "current",
+      vialCharges = 0,
+    }
+  end
+  if type(session.modData) ~= "table" then session.modData = {} end
+  local root = session.modData[DEXNAV_SAVE_ROOT]
+  if type(root) ~= "table" then
+    root = {}
+    session.modData[DEXNAV_SAVE_ROOT] = root
+  end
+  if type(root.skills) ~= "table" then root.skills = {} end
+  local state = root.skills
+  state.schema = SKILL_SCHEMA
+  if type(state.unlocked) ~= "table" then state.unlocked = {} end
+  state.unlocked.autoRun = true
+  state.autoRun = state.autoRun == true
+  state.infiniteRepel = state.infiniteRepel == true
+  if state.timeMode ~= "day" and state.timeMode ~= "dusk"
+      and state.timeMode ~= "night" then
+    state.timeMode = "current"
+  end
+  if state.vialCharges ~= nil then
+    state.vialCharges = math.max(0, math.min(6,
+      math.floor(tonumber(state.vialCharges) or 0)))
+  end
+  return state
+end
+
+local function normalizedItemName(value)
+  local s = tostring(value or "")
+  s = s:gsub("é", "e"):gsub("É", "E")
+  return s:upper():gsub("[^A-Z0-9]", "")
+end
+
+local function discoverSkillItems(deps)
+  if Qol._skillItems then return Qol._skillItems end
+  local found = {}
+  if not (deps.ItemsData and deps.ItemsData.ensureLoaded) then
+    Qol._skillItems = found
+    return found
+  end
+  local ok, items = pcall(deps.ItemsData.ensureLoaded)
+  if ok and type(items) == "table" then
+    for id, row in pairs(items) do
+      local normalized = normalizedItemName(type(row) == "table" and row.name or nil)
+      for key, wanted in pairs(SKILL_ITEM_KEYS) do
+        if normalized == wanted then found[key] = tonumber(id) or id end
+      end
+    end
+  end
+  Qol._skillItems = found
+  return found
+end
+
+local function refreshSkillUnlocks(deps, session)
+  local state = skillState(session)
+  local items = discoverSkillItems(deps)
+  local bag = session and session.bag
+  for key, id in pairs(items) do
+    if id ~= nil and bag and deps.Bag and deps.Bag.has
+        and deps.Bag.has(bag, id, 1) then
+      local first = state.unlocked[key] ~= true
+      state.unlocked[key] = true
+      if key == "pokeVial" and (first or state.vialCharges == nil) then
+        state.vialCharges = 6
+      end
+    end
+  end
+  if state.vialCharges == nil then state.vialCharges = 0 end
+  return state
+end
+
+local function applySkillTime(deps, state)
+  if not (deps.RR_Encounters and deps.RR_Encounters.setOverrideHour) then return end
+  local hour
+  for _, row in ipairs(TIME_CHOICES) do
+    if row.key == state.timeMode then hour = row.hour break end
+  end
+  deps.RR_Encounters.setOverrideHour(hour)
+end
+
+local function installSkills(mod, deps)
+  if Qol._skills then return Qol._skills end
+  local okStack, Stack = pcall(require, "src.ui.game3.stack")
+  if not okStack then return nil end
+
+  local Skills = {
+    open = false,
+    cursor = 1,
+    mode = "main",
+    timeCursor = 1,
+    game = nil,
+    session = nil,
+    status = nil,
+    fieldHeld = false,
+    usingVial = false,
+  }
+
+  local function state()
+    local session = Skills.session or sessionOf(deps)
+    return refreshSkillUnlocks(deps, session), session
+  end
+
+  local function timeIndex(key)
+    for i, row in ipairs(TIME_CHOICES) do
+      if row.key == key then return i end
+    end
+    return 1
+  end
+
+  local function skillRows(st)
+    return {
+      { key = "autoRun", label = "AUTO RUN", unlocked = true },
+      { key = "timeChanger", label = "TIME CHANGER",
+        unlocked = st.unlocked.timeChanger == true },
+      { key = "infiniteRepel", label = "INFINITE REPEL",
+        unlocked = st.unlocked.infiniteRepel == true },
+      { key = "pokeVial", label = "POKEVIAL",
+        unlocked = st.unlocked.pokeVial == true },
+    }
+  end
+
+  function Skills.itemIds()
+    local ids = discoverSkillItems(deps)
+    return {
+      timeChanger = ids.timeChanger,
+      infiniteRepel = ids.infiniteRepel,
+      pokeVial = ids.pokeVial,
+    }
+  end
+
+  function Skills.show(game, session)
+    if Skills.open then return true end
+    Skills.game = game
+    Skills.session = session or (game and game.session) or sessionOf(deps)
+    local st = refreshSkillUnlocks(deps, Skills.session)
+    applySkillTime(deps, st)
+    Skills.cursor = math.max(1, math.min(4, Skills.cursor or 1))
+    Skills.mode = "main"
+    Skills.timeCursor = timeIndex(st.timeMode)
+    Skills.status = nil
+    Skills.open = true
+    Stack.push("rr_skills", Skills, { hideBelow = true, fullscreen = true })
+    playSelect()
+    return true
+  end
+
+  function Skills.close(silent)
+    if not Skills.open then return end
+    Skills.open = false
+    Skills.mode = "main"
+    Stack.pop("rr_skills")
+    if not silent then playSelect() end
+  end
+
+  function Skills.isOpen() return Skills.open end
+
+  local function partyNeedsVial(session)
+    for _, mon in ipairs((session and session.party) or {}) do
+      if type(mon) == "table" then
+        if mon.maxHp and (tonumber(mon.hp) or 0) < tonumber(mon.maxHp) then
+          return true
+        end
+        if mon.status ~= nil or mon.sleep ~= nil then return true end
+        if type(mon.pp) == "table" and type(mon.moves) == "table" then
+          for i = 1, 4 do
+            if mon.moves[i] then
+              local cur = tonumber(mon.pp[i]) or 0
+              local mx = tonumber(mon.maxPp and mon.maxPp[i])
+              if mx and cur < mx then return true end
+            end
+          end
+        end
+      end
+    end
+    return false
+  end
+
+  function Skills.useVial()
+    local st, session = state()
+    if not st.unlocked.pokeVial then
+      Skills.status = "POKEVIAL is still locked."
+      return false
+    end
+    if (tonumber(st.vialCharges) or 0) <= 0 then
+      Skills.status = "POKEVIAL is empty. Heal to refill it."
+      return false
+    end
+    if not partyNeedsVial(session) then
+      Skills.status = "Your party is already healthy."
+      return false
+    end
+    local Party = require("src.core.game3.party")
+    Skills.usingVial = true
+    local ok, err = pcall(Party.healAll, session.party)
+    Skills.usingVial = false
+    if not ok then
+      Skills.status = "POKEVIAL failed: " .. tostring(err)
+      return false
+    end
+    st.vialCharges = st.vialCharges - 1
+    Skills.status = ("Party restored. %d/6 uses remain."):format(st.vialCharges)
+    playSelect()
+    return true
+  end
+
+  local function activateMain()
+    local st = state()
+    local row = skillRows(st)[Skills.cursor]
+    if not row or not row.unlocked then
+      Skills.status = "That skill has not been unlocked yet."
+      playSelect()
+      return
+    end
+    if row.key == "autoRun" then
+      st.autoRun = not st.autoRun
+      Skills.status = "Auto Run " .. (st.autoRun and "ON" or "OFF")
+      playSelect()
+    elseif row.key == "timeChanger" then
+      Skills.mode = "time"
+      Skills.timeCursor = timeIndex(st.timeMode)
+      Skills.status = nil
+      playSelect()
+    elseif row.key == "infiniteRepel" then
+      st.infiniteRepel = not st.infiniteRepel
+      Skills.status = "Infinite Repel " .. (st.infiniteRepel and "ON" or "OFF")
+      playSelect()
+    elseif row.key == "pokeVial" then
+      Skills.useVial()
+    end
+  end
+
+  function Skills.handleInput(input)
+    if not Skills.open or not input then return false end
+    if Skills.mode == "time" then
+      if input:wasPressed("up") then
+        Skills.timeCursor = ((Skills.timeCursor - 2) % #TIME_CHOICES) + 1
+        playSelect()
+      elseif input:wasPressed("down") then
+        Skills.timeCursor = (Skills.timeCursor % #TIME_CHOICES) + 1
+        playSelect()
+      elseif input:wasPressed("a") then
+        local st = state()
+        local row = TIME_CHOICES[Skills.timeCursor]
+        st.timeMode = row.key
+        applySkillTime(deps, st)
+        Skills.mode = "main"
+        Skills.status = "Time set to " .. row.label .. "."
+        playSelect()
+      elseif input:wasPressed("b") then
+        Skills.mode = "main"
+        Skills.status = nil
+        playSelect()
+      end
+      return true
+    end
+    if input:wasPressed("up") then
+      Skills.cursor = ((Skills.cursor - 2) % 4) + 1
+      Skills.status = nil
+      playSelect()
+    elseif input:wasPressed("down") then
+      Skills.cursor = (Skills.cursor % 4) + 1
+      Skills.status = nil
+      playSelect()
+    elseif input:wasPressed("a") then
+      activateMain()
+    elseif input:wasPressed("b") or input:wasPressed("start") then
+      Skills.close()
+    end
+    return true
+  end
+
+  function Skills.handleFieldInput(game)
+    if not game or not game.input or not game.input.wasPressed then return false end
+    local input = game.input
+    local queued = false
+    for _, value in ipairs(input.pressQueue or {}) do
+      if value == "l" then queued = true break end
+    end
+    local active = queued or input:wasPressed("l")
+    if input.isDown then active = input:isDown("l") or active end
+    local pressed = active and not Skills.fieldHeld
+    Skills.fieldHeld = active and true or false
+    if not pressed or game.phase ~= "field" or Stack.busy() then return false end
+    local okBattle, Battle = pcall(require, "src.core.game3.battle")
+    if okBattle and Battle and Battle.isActive and Battle.isActive() then return false end
+    local Field = package.loaded["src.core.game3.field"]
+    if Field and Field.locked then return false end
+    local Space = package.loaded["src.core.game3.scripting.space"]
+    if Space and Space.vm and Space.vm.isRunning and Space.vm:isRunning() then
+      return false
+    end
+    return Skills.show(game, game.session or sessionOf(deps))
+  end
+
+  local function drawText(value, x, y, color)
+    local okFont, FrlgFont = pcall(require, "src.ui.game3.frlg_font")
+    if okFont and FrlgFont and FrlgFont.draw then
+      FrlgFont.draw(tostring(value), x, y, {
+        small = true, colors = color or FrlgFont.COLOR.NORMAL,
+      })
+    elseif love and love.graphics then
+      love.graphics.setColor(0.08, 0.08, 0.1, 1)
+      love.graphics.print(tostring(value), x, y)
+    end
+  end
+
+  function Skills.draw()
+    if not Skills.open or not (love and love.graphics) then return end
+    local g = love.graphics
+    local st = state()
+    g.setColor(0.94, 0.95, 0.86, 1)
+    g.rectangle("fill", 0, 0, 240, 160)
+    g.setColor(0.10, 0.34, 0.58, 1)
+    g.rectangle("fill", 0, 0, 240, 20)
+    g.setColor(1, 1, 1, 1)
+    drawText("SKILLS", 96, 4)
+
+    if Skills.mode == "time" then
+      drawText("TIME CHANGER", 72, 28)
+      for i, row in ipairs(TIME_CHOICES) do
+        local y = 49 + (i - 1) * 20
+        if i == Skills.timeCursor then
+          g.setColor(0.72, 0.84, 0.94, 1)
+          g.rectangle("fill", 46, y - 2, 148, 16)
+          g.setColor(1, 1, 1, 1)
+        end
+        drawText((i == Skills.timeCursor and "> " or "  ") .. row.label, 54, y)
+      end
+      drawText("A: SET   B: BACK", 68, 139)
+      return
+    end
+
+    local rows = skillRows(st)
+    for i, row in ipairs(rows) do
+      local y = 34 + (i - 1) * 24
+      if i == Skills.cursor then
+        g.setColor(0.72, 0.84, 0.94, 1)
+        g.rectangle("fill", 12, y - 3, 216, 19)
+        g.setColor(1, 1, 1, 1)
+      end
+      local suffix
+      if not row.unlocked then
+        suffix = "LOCKED"
+      elseif row.key == "autoRun" then
+        suffix = st.autoRun and "ON" or "OFF"
+      elseif row.key == "timeChanger" then
+        suffix = tostring(st.timeMode):upper()
+      elseif row.key == "infiniteRepel" then
+        suffix = st.infiniteRepel and "ON" or "OFF"
+      else
+        suffix = ("%d/6"):format(tonumber(st.vialCharges) or 0)
+      end
+      drawText((i == Skills.cursor and "> " or "  ") .. row.label, 20, y)
+      drawText(suffix, 166, y)
+    end
+    drawText(Skills.status or "A: USE/TOGGLE   B: BACK", 18, 139)
+    g.setColor(1, 1, 1, 1)
+  end
+
+  -- Auto Run mirrors Radical Red's convenience toggle without changing the
+  -- running-shoes flag itself.  When enabled, B temporarily means WALK.
+  local okPlayer, Player = pcall(require, "src.core.game3.player")
+  if okPlayer and Player and not Player.__rrAutoRunInstalled then
+    Player.__rrAutoRunInstalled = true
+    local originalUpdate = assert(Player.update)
+    Player.update = function(game, input)
+      local session = (game and game.session) or sessionOf(deps)
+      local st = refreshSkillUnlocks(deps, session)
+      if not (st.autoRun and input and input.isDown) then
+        return originalUpdate(game, input)
+      end
+      local proxy = setmetatable({}, {
+        __index = function(_, key)
+          local value = input[key]
+          if type(value) ~= "function" then return value end
+          if key == "isDown" then
+            return function(_, button)
+              if button == "b" then return not input:isDown("b") end
+              return input:isDown(button)
+            end
+          end
+          return function(_, ...) return value(input, ...) end
+        end,
+      })
+      return originalUpdate(game, proxy)
+    end
+  end
+
+  -- A PokéVial is refilled by a normal full-party heal. Guard the Vial's own
+  -- heal so spending a charge cannot instantly refill itself.
+  local Party = require("src.core.game3.party")
+  if not Party.__rrPokeVialInstalled then
+    Party.__rrPokeVialInstalled = true
+    local originalHealAll = assert(Party.healAll)
+    Party.healAll = function(sessionParty)
+      local result = originalHealAll(sessionParty)
+      if not Skills.usingVial then
+        local session = sessionOf(deps)
+        if session and session.party == sessionParty then
+          local st = refreshSkillUnlocks(deps, session)
+          if st.unlocked.pokeVial then st.vialCharges = 6 end
+        end
+      end
+      return result
+    end
+  end
+
+  mod.hooks:wrap("encounter.roll", function(next, encounterTable, ctx)
+    local session = sessionOf(deps)
+    local st = refreshSkillUnlocks(deps, session)
+    if st.unlocked.infiniteRepel and st.infiniteRepel then return nil end
+    return next(encounterTable, ctx)
+  end, 1000)
+
+  for _, event in ipairs({ "save.created", "save.loaded", "map.entered", "map.reloaded" }) do
+    mod.events:on(event, function()
+      local session = sessionOf(deps)
+      if not session then return end
+      local st = refreshSkillUnlocks(deps, session)
+      applySkillTime(deps, st)
+    end)
+  end
+
+  Qol._skills = Skills
+  return Skills
+end
+
 local function drawMonIcon(Pokemon, mon, cx, cy)
   local ok, icon = pcall(Pokemon.monIcon, mon)
   if not ok or not icon or not icon.image then return false end
