@@ -114,6 +114,7 @@ local function markerReady(cache, Profile, opts)
   end
   if expectedSchema >= 18 then
     essentials[#essentials + 1] = root .. "/audio/rr_cry_ids.lua"
+    essentials[#essentials + 1] = root .. "/pokemon/battle_anims/pack.lua"
   end
   local essentialsOk = requireFiles(cache, essentials)
   if not essentialsOk then return false end
@@ -329,6 +330,96 @@ local function writeBattleMoves(rom, cache, Profile)
   lines[#lines + 1] = ""
   put(cache, Profile.extractRoot() .. "/pokemon/battle_moves.lua", table.concat(lines, "\n"))
   return counts
+end
+
+local function configureExpandedBattleAnims(rom, Profile)
+  local function resolve(slot, label)
+    local ptr = rom:u32(assert(slot, label .. " pointer slot missing"))
+    local off = rom:ptrOffset(ptr)
+    assert(off, ("Radical Red %s pointer is invalid: 0x%08X")
+      :format(label, tonumber(ptr) or 0))
+    return off
+  end
+
+  local moves = resolve(Profile.OFFSET.moveAnimationsPointerSlot,
+    "gMoveAnimations")
+  local picsA = resolve(Profile.OFFSET.battleAnimPicPointerSlotA,
+    "gBattleAnimPicTable A")
+  local picsB = resolve(Profile.OFFSET.battleAnimPicPointerSlotB,
+    "gBattleAnimPicTable B")
+  local backgrounds = resolve(Profile.OFFSET.battleAnimBgPointerSlot,
+    "gAnimationBackgrounds")
+  assert(picsA == picsB,
+    ("Radical Red battle animation picture pointers disagree: 0x%X / 0x%X")
+      :format(picsA, picsB))
+  assert(moves + Profile.MOVE_COUNT * 4 <= Profile.ROM_SIZE,
+    "Radical Red move-animation pointer table runs past the ROM")
+  assert(picsA + Profile.BATTLE_ANIM_TAG_COUNT * 8 <= Profile.ROM_SIZE,
+    "Radical Red battle-animation picture table runs past the ROM")
+  assert(backgrounds + Profile.BATTLE_ANIM_BG_COUNT * 12 <= Profile.ROM_SIZE,
+    "Radical Red animation-background table runs past the ROM")
+
+  -- CFRU's source places gBattleAnimPaletteTable directly after its equally
+  -- sized gBattleAnimPicTable. Keep this derivation tied to the exact table
+  -- count and validate both first rows before extraction.
+  local palettes = picsA + Profile.BATTLE_ANIM_TAG_COUNT * 8
+  local firstMove = rom:ptrOffset(rom:u32(moves))
+  local firstPic = rom:ptrOffset(rom:u32(picsA))
+  local firstPal = rom:ptrOffset(rom:u32(palettes))
+  assert(firstMove and firstPic and firstPal,
+    "Radical Red expanded animation tables failed pointer sentinels")
+  assert(rom:get(firstPic) == 0x10,
+    "Radical Red first battle-animation particle is not LZ77 graphics")
+
+  -- U-turn is a post-Gen-III sentinel that must have a real script pointer.
+  local uTurnPtr = rom:ptrOffset(rom:u32(moves + 0x1BA * 4))
+  assert(uTurnPtr,
+    "Radical Red U-turn has no expanded battle-animation script")
+
+  local Versions = require("src.import.gba.versions")
+  local anim = copy(assert(Versions.BATTLE_ANIMS,
+    "FireRed battle-animation metadata is unavailable"))
+  anim.moves_table = moves
+  anim.move_count = Profile.MOVE_COUNT
+  anim.pic_table = picsA
+  anim.pal_table = palettes
+  anim.tag_count = Profile.BATTLE_ANIM_TAG_COUNT
+  anim.bg_table = backgrounds
+  anim.bg_count = Profile.BATTLE_ANIM_BG_COUNT
+  Versions.BATTLE_ANIMS = anim
+
+  -- The host knows the 289 vanilla tag names. CFRU's extra rows use the same
+  -- table/index contract; stable synthetic names are sufficient for extraction
+  -- and runtime lookup because both sides consume the generated pack.
+  Versions.ANIM_TAG_NAMES = copy(Versions.ANIM_TAG_NAMES)
+  for index = 289, Profile.BATTLE_ANIM_TAG_COUNT - 1 do
+    if not Versions.ANIM_TAG_NAMES[index] then
+      Versions.ANIM_TAG_NAMES[index] = "RR_TAG_" .. tostring(index)
+    end
+  end
+
+  return {
+    movesTable = moves,
+    pictureTable = picsA,
+    paletteTable = palettes,
+    backgroundTable = backgrounds,
+    uTurnScript = uTurnPtr,
+  }
+end
+
+local function extractExpandedBattleAnims(rom, cache, Profile)
+  local tables = configureExpandedBattleAnims(rom, Profile)
+  local BattleAnimExtract = require("src.import.gba.battle_anim_extract")
+  local report = assert(BattleAnimExtract.run(rom, cache, {
+    cacheRoot = Profile.extractRoot(),
+    force = true,
+    strict = false,
+  }))
+  assert(report.moveCount == Profile.MOVE_COUNT,
+    ("Radical Red battle animation extraction decoded %s/%d moves")
+      :format(tostring(report.moveCount), Profile.MOVE_COUNT))
+  report.tables = tables
+  return report
 end
 
 local function writePicCoords(rom, cache, Profile)
@@ -703,26 +794,28 @@ function Extractor.ensure(mod, Profile, opts)
           "Radical Red Fairy badge cache upgrader is unavailable")
       end
 
-      local total = 1 + (needsPicCoords and 1 or 0)
+      local total = 2 + (needsPicCoords and 1 or 0)
         + (needsMenuInfo and 1 or 0)
       local step = 0
       progress("expanded_tables", step, total)
       local picCoords, menuInfo
 
-      if needsPicCoords or needsMenuInfo then
-        local upgradeRom = assert(StreamRom.open(adapter, "firered"))
-        if needsPicCoords then
-          picCoords = writePicCoords(upgradeRom, mod.cache, Profile)
-          step = step + 1
-          progress("expanded_tables", step, total)
-        end
-        if needsMenuInfo then
-          menuInfo = Visuals.rebuildMenuInfo(upgradeRom, mod.cache, Profile)
-          step = step + 1
-          progress("expanded_tables", step, total)
-        end
-        upgradeRom:clearCache()
+      local upgradeRom = assert(StreamRom.open(adapter, "firered"))
+      if needsPicCoords then
+        picCoords = writePicCoords(upgradeRom, mod.cache, Profile)
+        step = step + 1
+        progress("expanded_tables", step, total)
       end
+      if needsMenuInfo then
+        menuInfo = Visuals.rebuildMenuInfo(upgradeRom, mod.cache, Profile)
+        step = step + 1
+        progress("expanded_tables", step, total)
+      end
+      local battleAnims = extractExpandedBattleAnims(
+        upgradeRom, mod.cache, Profile)
+      step = step + 1
+      progress("expanded_tables", step, total)
+      upgradeRom:clearCache()
 
       -- Audio extraction needs the raw WaveData payloads. Read the validated
       -- 32 MiB ROM once, rebuild only /audio, then release it immediately.
@@ -740,6 +833,7 @@ function Extractor.ensure(mod, Profile, opts)
         upgradedFromSchema = fromSchema,
         picCoords = picCoords,
         menuInfo = menuInfo,
+        battleAnims = battleAnims,
         audio = audio,
       })
     end
@@ -804,6 +898,8 @@ function Extractor.ensure(mod, Profile, opts)
   progress("expanded_tables", 8, 8)
   local optionalOk, optionalFailures = runOptionalExtractors(
     rom, mod.cache, Profile, mod.log, progress)
+  local battleAnimReport = extractExpandedBattleAnims(
+    rom, mod.cache, Profile)
   rom:clearCache()
 
   if not opts.skipGraphicalAssets then
@@ -857,6 +953,7 @@ function Extractor.ensure(mod, Profile, opts)
     worldAudit = world.worldAudit,
     optionalExtractors = optionalOk,
     optionalFailures = optionalFailures,
+    battleAnims = battleAnimReport,
     scriptEntries = scriptEntries,
     scriptShards = scriptParts,
     pokemonAuxiliaryError = pokemonExtractError,
