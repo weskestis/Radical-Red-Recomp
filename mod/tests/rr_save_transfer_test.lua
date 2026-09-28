@@ -75,11 +75,11 @@ package.loaded["src.import.SaveFileIO"] = SaveFileIO
 
 local RomImporter = {}
 function RomImporter.new(_, opts)
-  return {
+  return setmetatable({
     onEditSave = opts and opts.onEditSave,
     slots = {}, activeSlot = {}, slotScroll = {}, saveNotice = {},
     workState = "idle",
-  }
+  }, { __index = RomImporter })
 end
 function RomImporter:_refreshSlots(scope)
   self.slots[scope] = { { id = "base" } }
