@@ -17,7 +17,7 @@ local Profile = {
   -- Bump whenever the private-ROM cache layout or a decoded RR structure
   -- changes.  A mismatched marker makes the mod rebuild from the player's
   -- validated import instead of ever mixing old/vanilla cache data.
-  CACHE_SCHEMA = 16,
+  CACHE_SCHEMA = 17,
 
   SPECIES_COUNT = 1376,
   MOVE_COUNT = 1004,
