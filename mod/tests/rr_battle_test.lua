@@ -80,6 +80,17 @@ function Engine.resumeChoice(st)
   local move = st.pendingChoice.M.move
   return { physical = Types.isPhysical(move.type), category = move.category }
 end
+function Engine.moveEndEffects(M) M.baseMoveEndRan = true end
+function Engine.switchCandidates() return { 2 } end
+function Engine.mostSuitableMon() return 2 end
+function Engine.performSwitch(st, ad, side, slot, opts)
+  Engine.lastSwitch = { st = st, ad = ad, side = side, slot = slot, opts = opts }
+  return { side = side, id = side == "player" and 0 or 1,
+    partyIndex = slot, mon = { species = 4 }, stages = {} }
+end
+function Engine.switchInEffects(_, _, battler, opts)
+  Engine.lastSwitchIn = { battler = battler, opts = opts }
+end
 
 local State = {
   occupant = function(st, id) return st.battlers[id] end,
@@ -114,6 +125,11 @@ assert(report.categoryCounts.physical == 435)
 assert(report.categoryCounts.special == 305)
 assert(report.categoryCounts.status == 264)
 assert(report.expandedBattlePlaceholders == 3 and report.expTextPlaceholder)
+assert(report.damagingPivotFix == true and report.damagingPivotMoves == 3
+    and report.uTurnMoveId == 0x1BA,
+  "RR damaging pivot compatibility was not installed")
+assert(rom:move(0x1BA).effect == 127 and rom:move(0x1BA).power > 0,
+  "exact RR U-turn no longer uses the expected damaging Baton Pass effect")
 local expCtx = BattleText.context({ buff3 = "69" })
 assert(expCtx.battle[0x34] == "69", "CFRU B_BUFF3 did not resolve EXP")
 assert(BattleText.context({ atk = "player" }).battle[0x38] == "Your")
@@ -172,6 +188,38 @@ assert(Engine.resolveMove(0, nil, 44, nil, nil, numericState).physical == false)
 
 local pending = { pendingChoice = { M = { move = Moves.get(247) } } }
 assert(Engine.resumeChoice(pending).physical == false)
+
+-- CFRU encodes U-turn as a damaging EFFECT_BATON_PASS move. The stock host
+-- skips effect dispatch for damaging attacks, so RR's compatibility wrapper
+-- must perform a normal post-hit switch without preserving Baton Pass state.
+do
+  Engine.lastSwitch, Engine.lastSwitchIn = nil, nil
+  local st = { double = false, interactiveChoices = false }
+  local user = { side = "player", id = 0, stages = { attack = 3 } }
+  local adapter = {
+    _st = st,
+    isFainted = function() return false end,
+    pushEvent = function() end,
+    _say = function() end,
+  }
+  local M = {
+    mnum = 0x1BA, user = user, adapter = adapter, st = st,
+    hitsLanded = 1, anim = { missed = false },
+  }
+  Engine.moveEndEffects(M)
+  assert(M.baseMoveEndRan == true, "stock move-end effects were skipped")
+  assert(Engine.lastSwitch and Engine.lastSwitch.slot == 2
+      and Engine.lastSwitch.opts.batonPass == false,
+    "U-turn did not perform a normal post-hit switch")
+  assert(Engine.lastSwitchIn and Engine.lastSwitchIn.battler.partyIndex == 2,
+    "U-turn did not apply switch-in effects to the replacement")
+
+  Engine.lastSwitch = nil
+  M.hitsLanded, M.noEffect, M.anim.missed = 0, true, true
+  Engine.moveEndEffects(M)
+  assert(Engine.lastSwitch == nil,
+    "U-turn switched after a miss/immune/no-damage result")
+end
 
 -- A second install refreshes private-ROM data without wrapping functions twice.
 assert(Battle.install(rom, {
