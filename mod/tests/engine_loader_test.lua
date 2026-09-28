@@ -283,16 +283,27 @@ assert(exports.randomizerReport.regionalStarterPreserved == true)
 assert(exports.randomizerReport.fixedRivals == true)
 assert(exports.randomizerReport.fixedRivalClasses == 2)
 assert(exports.randomizerReport.fixedRivalIds == 12)
+assert(exports.randomizerReport.fixedBosses == true)
 assert(exports.facilityReport.nativeCallbacks == 10)
 assert(exports.facilityReport.dynamicTrainerIds == true)
 assert(exports.raidReport.specialCallbacks == 8)
 assert(exports.raidReport.battleHooks == true)
+assert(exports.raidReport.wishingPieceRespawn == true)
 assert(exports.qolReport.runningShoes == true)
 assert(exports.qolReport.dexAll == true)
 assert(exports.qolReport.teamPreview == true)
 assert(exports.qolReport.ezCatch == true)
 assert(exports.qolReport.dexNavReliableFieldEdge == true)
 assert(exports.qolReport.dexNavFieldSelect == true)
+assert(exports.qolReport.skillsMenu == true)
+assert(exports.qolReport.autoRunSkill == true)
+assert(exports.qolReport.timeChangerSkill == true)
+assert(exports.qolReport.infiniteRepelSkill == true)
+assert(exports.qolReport.pokeVialSkill == true)
+assert(exports.qolReport.fanfareBgmRecovery == true)
+assert(exports.qolReport.eliteFourVsIntroFix == true)
+assert(exports.qolReport.battleMusicReturn == true)
+assert(exports.runtimeReport.saveTransferBridge == true)
 assert(exports.visualReport.optionsDraw == true)
 assert(exports.visualReport.optionsFallbackGuard == true)
 assert(exports.visualReport.portableOptionsDraw == true)
@@ -1162,6 +1173,53 @@ do
         and passed[1].moveIds[1] == 33 and passed[1].heldItem == 13,
       "starter/region rival party was randomized after ROM branch selection")
   end
+  -- The three earned overworld Skills must resolve from the exact RR item
+  -- table, not from synthetic ids baked into the mod.
+  local ItemsData = require("src.core.game3.items_data")
+  local function normalizedItemName(value)
+    local text = tostring(value or "")
+    text = text:gsub("é", "e"):gsub("É", "E")
+    return text:upper():gsub("[^A-Z0-9]", "")
+  end
+  local skillIds = assert(exports.qolReport.skillItemIds)
+  assert(skillIds.timeChanger and skillIds.infiniteRepel and skillIds.pokeVial,
+    "one or more Radical Red Skill key items were not found in the exact ROM")
+  assert(normalizedItemName(ItemsData.displayName(skillIds.timeChanger)) == "TIMECHANGER")
+  assert(normalizedItemName(ItemsData.displayName(skillIds.infiniteRepel)) == "INFINITEREPEL")
+  assert(normalizedItemName(ItemsData.displayName(skillIds.pokeVial)) == "POKEVIAL")
+
+  -- Find a boss from the live extracted trainer table and prove the enabled
+  -- species randomizer preserves the authored party while an ordinary trainer
+  -- is still randomized below.
+  local Trainers = require("src.core.game3.scripting.trainers")
+  local bossId, bossClass
+  for id = 0, 1200 do
+    local row = Trainers.get(id)
+    if row then
+      local className = tostring(row.className or ""):upper()
+      local name = tostring(row.name or ""):upper()
+      if className:find("LEADER", 1, true)
+          or className:find("ELITE", 1, true)
+          or className:find("CHAMPION", 1, true)
+          or className:find("ADMIN", 1, true)
+          or className:find("BOSS", 1, true)
+          or name == "GIOVANNI" then
+        bossId, bossClass = id, tonumber(row.class) or 1
+        break
+      end
+    end
+  end
+  assert(bossId ~= nil, "exact RR trainer table exposed no authored boss")
+  local bossParty = { {
+    species = 25, speciesId = 25, level = 50, heldItem = 13,
+    moves = { "THUNDERBOLT" }, moveIds = { 85 },
+  } }
+  local bossPassed = loader.hooks:call("trainer.party",
+    function(_, _, party) return party end, bossClass, bossId, bossParty)
+  assert(bossPassed == bossParty and bossPassed[1].speciesId == 25
+      and bossPassed[1].heldItem == 13 and bossPassed[1].moveIds[1] == 85,
+    "authored boss party was randomized in the exact RR runtime")
+
   local ordinaryParty = { { species = 1, speciesId = 1, level = 5 } }
   local randomizedTrainer = loader.hooks:call("trainer.party",
     function(_, _, party) return party end, 1, 19, ordinaryParty)
