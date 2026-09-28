@@ -1574,6 +1574,9 @@ function Qol.install(mod, overrides)
   end, 950)
 
   local teamPreview = installTeamPreview(deps)
+  local fanfareRecovery = installFanfareRecovery()
+  local vsIntroFix = installVsIntroFix()
+  local battleMusicReturn = installBattleMusicReturn(mod)
   Qol.ensureRunningShoes(deps)
   return {
     runningShoes = true,
@@ -1588,6 +1591,9 @@ function Qol.install(mod, overrides)
     infiniteRepelSkill = skills ~= nil,
     pokeVialSkill = skills ~= nil,
     skillItemIds = skills and skills.itemIds() or {},
+    fanfareBgmRecovery = fanfareRecovery == true,
+    eliteFourVsIntroFix = vsIntroFix == true,
+    battleMusicReturn = battleMusicReturn == true,
     consoleFlags = {
       SO2Toxic = Qol.FLAG.SO2_TOXIC,
       Woyaopp = Qol.FLAG.WOYAOPP,
