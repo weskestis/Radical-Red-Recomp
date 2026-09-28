@@ -1,6 +1,6 @@
 # Radical Red
 
-Radical Red 0.5.16 is a FireRed-only runtime total conversion for unmodified
+Radical Red 0.5.19 is a FireRed-only runtime total conversion for unmodified
 gen1recomp 0.3.5 and 0.3.20. It validates the player's own Pokémon Radical Red
 v4.1 ROM, builds a private cache on first start, and mounts that data as the
 active game. No launcher, executable, APK, or engine file is modified.
@@ -40,8 +40,19 @@ not overwrite each other's saves.
   chains, scan encounters, rod requirements, egg moves, hidden abilities,
   held items, IV potential, and reliable registered R/SELECT field shortcuts;
   `DexAll` reveals unseen entries, and an assigned key item keeps SELECT;
+- an overworld **L Skills** menu for Auto Run, Time Changer, Infinite Repel,
+  and the six-use PokéVial, with the latter three unlocking from their actual
+  Radical Red key items;
+- authored bosses and every starter/region rival remain on their cartridge
+  teams even while ordinary-trainer species randomization is enabled;
 - raid encounters, rewards, capture flow, barriers, Max moves, repeated boss
-  attacks, stat nullification, and raid loss rules;
+  attacks, stat nullification, raid loss rules, and Wishing Piece reactivation
+  of cleared dens;
+- Radical Red save import/export stays on the FireRed launcher card while
+  operating on the conversion's private save namespace;
+- the CFRU Fairy type badge is extracted from its real tile 0x100 and rendered
+  as FAIRY in summary, move, TM, and Pokédex type badges instead of falling
+  back to NORMAL;
 - ROM-backed facility trainers, spreads, rentals, and party restoration.
 
 The remaining compatibility boundary is documented in
@@ -79,7 +90,7 @@ The first start opens the game, displays live conversion progress, and keeps
 Android responsive while the bounded ROM reader and staged extractor do their
 work. Interrupted cache work is safely resumed. If a conversion step fails,
 the exact stage and error remain visible instead of silently returning to the
-launcher. Version 0.5.16 negotiates the string, numeric byte-array, and
+launcher. Version 0.5.19 negotiates the string, numeric byte-array, and
 byte-at-a-time ROM-reader interfaces found across supported Android payloads.
 Its legacy numeric-array path copies bounded ROM pages in blocks so conversion
 does not stall the Android main thread once per byte.
