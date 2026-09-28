@@ -81,6 +81,7 @@ return function(mod)
       encounters = Encounters,
       listMenus = ListMenus,
       streamRom = StreamRom,
+      visuals = Visuals,
       onProgress = onProgress,
     })
 
