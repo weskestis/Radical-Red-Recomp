@@ -257,9 +257,9 @@ assert(Stack.pushed[#Stack.pushed].id == "rr_skills",
 local Skills = Stack.pushed[#Stack.pushed].screen
 
 -- Auto Run: no physical B means run; holding B temporarily walks.
-pressed = { a = true }
+skillPressed = { a = true }
 Skills.handleInput(skillInput)
-pressed = {}
+skillPressed = {}
 local runInput = {
   isDown = function(_, key) return false end,
   wasPressed = function() return false end,
@@ -272,7 +272,7 @@ assert(Player._sawRun == false, "Auto Run did not let B temporarily walk")
 
 -- Time Changer uses the RR day/dusk/night clock override.
 Skills.cursor = 2
-pressed = { a = true }
+skillPressed = { a = true }
 Skills.handleInput(skillInput)
 assert(Skills.mode == "time", "Time Changer did not open")
 Skills.timeCursor = 4
@@ -282,14 +282,18 @@ assert(RR_Encounters.hour == 22 and Skills.mode == "main",
 
 -- Infinite Repel suppresses only the normal encounter.roll hook.
 Skills.cursor = 3
+skillPressed = { a = true }
 Skills.handleInput(skillInput)
+skillPressed = {}
 local ordinary = wrappers["encounter.roll"](function() return "WILD" end, {}, {})
 assert(ordinary == nil, "Infinite Repel did not suppress walking encounters")
 
 -- PokéVial full-heals, spends one of six charges, and a normal full-party heal
 -- refills the Vial without the Vial refilling itself.
 Skills.cursor = 4
+skillPressed = { a = true }
 Skills.handleInput(skillInput)
+skillPressed = {}
 local skillState = session.modData.radical_red_experience.skills
 assert(session.party[1].hp == 30 and session.party[1].pp[1] == 15
     and skillState.vialCharges == 5,
@@ -297,9 +301,9 @@ assert(session.party[1].hp == 30 and session.party[1].pp[1] == 15
 Party.healAll(session.party)
 assert(skillState.vialCharges == 6,
   "a normal full-party heal did not refill PokéVial to six uses")
-pressed = { b = true }
+skillPressed = { b = true }
 Skills.handleInput(skillInput)
-pressed = {}
+skillPressed = {}
 
 -- RR can repurpose trainer IDs/classes; the live trainer name must drive the
 -- Elite Four VS portrait instead of falling through to Blue/Gary.
