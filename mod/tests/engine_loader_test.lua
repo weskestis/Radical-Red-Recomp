@@ -306,6 +306,9 @@ assert(exports.qolReport.fanfareBgmRecovery == true)
 assert(exports.qolReport.eliteFourVsIntroFix == true)
 assert(exports.qolReport.battleMusicReturn == true)
 assert(exports.runtimeReport.saveTransferBridge == true)
+assert(exports.runtimeReport.expandedCries == true)
+assert(exports.runtimeReport.cryCount == 1376)
+assert(exports.runtimeReport.cryMappedSpecies == 1375)
 assert(exports.visualReport.optionsDraw == true)
 assert(exports.visualReport.optionsFallbackGuard == true)
 assert(exports.visualReport.portableOptionsDraw == true)
@@ -336,6 +339,50 @@ assert(exports.visualReport.usedPaletteCount == 397)
 assert(exports.visualReport.stuffulGraphicsId == 0x016E)
 assert(exports.visualReport.playerPaletteTag == 0x1100)
 assert(exports.visualReport.momPaletteTag == 0x1168)
+
+-- Expanded DPE cries must be addressed by live internal species id. The
+-- previous stock FireRed extractor stopped its cry map at species 411, which
+-- made modern encounters fall through to wrong/missing ToneData rows.
+do
+  local Pokemon = require("src.core.game3.pokemon")
+  local Audio = require("src.core.game3.audio")
+  local function norm(value)
+    local text = tostring(value or "")
+    text = text:gsub("é", "e"):gsub("É", "E")
+    return text:upper():gsub("[^A-Z0-9]", "")
+  end
+  local function findSpecies(want)
+    for id = 1, 1375 do
+      local ok, name = pcall(Pokemon.name, id)
+      if ok and norm(name) == want then return id end
+    end
+    return nil
+  end
+  for _, want in ipairs({ "TURTWIG", "LUCARIO", "TINKATINK" }) do
+    local species = assert(findSpecies(want),
+      "exact RR species table did not contain " .. want)
+    assert(species > 411,
+      want .. " unexpectedly landed inside FireRed's old cry-map range")
+    local cryIndex = Audio._pack.index.cryIds[species]
+    assert(cryIndex == species,
+      ("%s cry mapped to row %s instead of its RR species row %d")
+        :format(want, tostring(cryIndex), species))
+    local cry = Audio._pack.index.cries[cryIndex]
+    assert(cry and cry.sampleId ~= nil,
+      want .. " has no extracted RR cry sample")
+    local meta = Audio._pack.samples[cry.sampleId]
+      or Audio._pack.samples[tostring(cry.sampleId)]
+    assert(meta and (tonumber(meta.freq) or 0) > 0
+        and (tonumber(meta.size) or 0) > 0,
+      want .. " cry sample metadata is corrupt")
+    assert(Audio.playCry(species) == true,
+      want .. " cry would not start")
+    assert(Audio._crySlot and Audio._crySlot.info
+        and Audio._crySlot.info.cryIndex == species,
+      want .. " played another species' cry row")
+    Audio.stopCry()
+  end
+end
 
 -- Radical Red repurposes FireRed's Fame Checker slot as Poké Rider.
 do
