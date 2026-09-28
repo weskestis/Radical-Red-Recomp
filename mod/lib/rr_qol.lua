@@ -1446,6 +1446,7 @@ function Qol.install(mod, overrides)
   local deps = mergeDefaults(overrides)
   Qol._deps = deps
   local dexNav = installDexNav(mod, deps)
+  local skills = installSkills(mod, deps)
 
   -- New games can reload the already-selected start map, which emits
   -- save.created/map.reloaded rather than map.entered.  Cover every adoption
@@ -1455,6 +1456,7 @@ function Qol.install(mod, overrides)
   end
   mod.hooks:wrap("core.update", function(next, game, dt)
     Qol.ensureRunningShoes(deps)
+    if skills then skills.handleFieldInput(game) end
     if dexNav then dexNav.handleFieldInput(game) end
     return next(game, dt)
   end, 950)
@@ -1473,6 +1475,12 @@ function Qol.install(mod, overrides)
     ezCatch = true,
     dexNavReliableFieldEdge = true,
     dexNavFieldSelect = true,
+    skillsMenu = skills ~= nil,
+    autoRunSkill = skills ~= nil,
+    timeChangerSkill = skills ~= nil,
+    infiniteRepelSkill = skills ~= nil,
+    pokeVialSkill = skills ~= nil,
+    skillItemIds = skills and skills.itemIds() or {},
     consoleFlags = {
       SO2Toxic = Qol.FLAG.SO2_TOXIC,
       Woyaopp = Qol.FLAG.WOYAOPP,
