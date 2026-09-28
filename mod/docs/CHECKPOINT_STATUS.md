@@ -1,4 +1,4 @@
-# Radical Red 0.5.16 verification status
+# Radical Red 0.5.19 release-candidate status
 
 Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 
@@ -26,7 +26,7 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   byte-at-a-time `get`; tileset binary reads do not require one host API, and
   numeric slices are copied page-by-page rather than updating LRU state for
   every byte.
-- Private cache schema: 16.
+- Private cache schema: 18.
 - Wild encounters: 134 maps and 4,866 valid slots across the base and
   relocated 83-map day/night tables; all 177 `SPECIES_NONE` placeholders are
   removed, and a final runtime guard rejects invalid wild battles.
@@ -85,8 +85,21 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   release-gate chunk 1.969 seconds (three-second regression ceiling), with both
   modern and readBytes-only Android fixtures completing under the limit.
 - Launcher/engine source modifications: none.
+- 0.5.19 additions: FireRed-context RR save transfer, four-skill L menu,
+  authored-boss preservation, Wishing Piece den reactivation, CFRU Fairy badge,
+  damaging pivot moves, the full 1,376-row cry table, and the full 1,004-move
+  CFRU animation pack with 371 particle rows and 77 animation backgrounds.
 
-## Automated release gate
+## 0.5.19 certification state
+
+The rows in the legacy gate table below are the last fully executed 0.5.16
+baseline. New 0.5.19 regression coverage is committed, including exact-ROM
+sentinels for Poké Rider, modern cries, U-turn mechanics, Fairy rendering, and
+Gen 4+ animation/SFX integrity. Current GitHub Actions runs do not execute:
+both jobs terminate with `runner_id: 0` and an empty step list. Those new
+0.5.19 checks remain pending until a runner is assigned.
+
+## Last fully executed automated release gate (0.5.16 baseline)
 
 | Test | Result |
 |---|---|
