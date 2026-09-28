@@ -335,7 +335,7 @@ local function installFairyTypeBadgeRuntime(Profile)
         return image
       end
     end
-    return originalImage()
+    return nil
   end
 
   SummaryChrome.drawTypeBadge = function(typeId, x, y)
