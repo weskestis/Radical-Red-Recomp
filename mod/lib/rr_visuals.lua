@@ -211,6 +211,178 @@ local function rrBakePartySlot(gfx, tilemap, palette)
   return table.concat(rgba)
 end
 
+
+-- CFRU extends FireRed's gMoveMenuInfoIcons table with the Fairy badge at
+-- tile 0x100. The stock host reads/bakes only 16x16 tiles (128x128), ending at
+-- 0xFF, so type 23 is physically truncated and the renderer falls back to
+-- NORMAL. RR needs 16x18 tiles: Fairy starts at (0,128) and is 32x12.
+local RR_MENU_INFO_W, RR_MENU_INFO_H = 128, 144
+local RR_FAIRY_TYPE, RR_FAIRY_X, RR_FAIRY_Y = 23, 0, 128
+
+local function rrMenuInfoRgba(rom, Versions)
+  local gfxBytes = {}
+  local gfxLen = RR_MENU_INFO_W * RR_MENU_INFO_H / 2
+  for index = 0, gfxLen - 1 do
+    gfxBytes[index + 1] = rom:get(Versions.MENU_INFO_GFX + index)
+  end
+  local palBytes = {}
+  for index = 0, 63 do
+    palBytes[index + 1] = rom:get(Versions.MENU_INFO_PAL + index)
+  end
+  local palettes = partyPaletteBanks(palBytes)
+  local out = {}
+  local tilesWide, tilesHigh = 16, 18
+  for tileY = 0, tilesHigh - 1 do
+    local palette = palettes[tileY < 2 and 0 or 1] or palettes[0] or {}
+    for row = 0, 7 do
+      for tileX = 0, tilesWide - 1 do
+        local tile = tileY * tilesWide + tileX
+        local base = tile * 32 + row * 4
+        for pair = 0, 3 do
+          local byte = gfxBytes[base + pair + 1] or 0
+          local lo, hi = byte % 16, math.floor(byte / 16) % 16
+          for sub = 0, 1 do
+            local colorIndex = (sub == 0) and lo or hi
+            if colorIndex == 0 then
+              out[#out + 1] = string.char(0, 0, 0, 0)
+            else
+              local r, g, b = bgr555Rgb(palette[colorIndex] or 0)
+              out[#out + 1] = string.char(r, g, b, 255)
+            end
+          end
+        end
+      end
+    end
+  end
+  local rgba = table.concat(out)
+  assert(#rgba == RR_MENU_INFO_W * RR_MENU_INFO_H * 4,
+    "Radical Red expanded menu-info sheet has the wrong dimensions")
+  return rgba
+end
+
+local function writeExpandedMenuInfo(rom, cache, Profile)
+  local Versions = require("src.import.gba.versions")
+  Profile.apply(Versions)
+  local root = Profile.extractRoot() .. "/pokemon/summary/menu_info.rgba"
+  local rgba = rrMenuInfoRgba(rom, Versions)
+  local ok, err = cache:write(root, rgba)
+  assert(ok ~= false and ok ~= nil,
+    "could not write Radical Red Fairy type badge sheet: " .. tostring(err))
+  return {
+    width = RR_MENU_INFO_W, height = RR_MENU_INFO_H,
+    fairyType = RR_FAIRY_TYPE, fairyX = RR_FAIRY_X, fairyY = RR_FAIRY_Y,
+    bytes = #rgba,
+  }
+end
+
+local function installSummaryChromeExtraction(Profile)
+  local SummaryExtract = require("src.import.gba.summary_chrome_extract")
+  if SummaryExtract.__rrFairyBadgePatch then return end
+  local original = assert(SummaryExtract.run)
+  SummaryExtract.run = function(rom, cache, opts)
+    local report = original(rom, cache, opts)
+    local fairy = writeExpandedMenuInfo(rom, cache, Profile)
+    report = report or {}
+    report.rrMenuInfoWidth = fairy.width
+    report.rrMenuInfoHeight = fairy.height
+    report.rrFairyTypeBadge = true
+    return report
+  end
+  SummaryExtract.__rrFairyBadgeOriginal = original
+  SummaryExtract.__rrFairyBadgePatch = true
+end
+
+local function rrImageFromRgba(raw, width, height)
+  if not (love and love.image and love.graphics and raw
+      and #raw >= width * height * 4) then return nil end
+  local ok, imageData = pcall(love.image.newImageData,
+    width, height, "rgba8", raw)
+  if not ok or not imageData then
+    imageData = love.image.newImageData(width, height)
+    local at = 1
+    for y = 0, height - 1 do
+      for x = 0, width - 1 do
+        imageData:setPixel(x, y,
+          (raw:byte(at) or 0) / 255,
+          (raw:byte(at + 1) or 0) / 255,
+          (raw:byte(at + 2) or 0) / 255,
+          (raw:byte(at + 3) or 0) / 255)
+        at = at + 4
+      end
+    end
+  end
+  local image = love.graphics.newImage(imageData)
+  if image and image.setFilter then image:setFilter("nearest", "nearest") end
+  return image
+end
+
+local function installFairyTypeBadgeRuntime(Profile)
+  local SummaryChrome = require("src.ui.game3.summary_chrome")
+  if SummaryChrome.__rrFairyBadgePatch then return true end
+  local originalImage = assert(SummaryChrome.menuInfoImage)
+  local originalDraw = assert(SummaryChrome.drawTypeBadge)
+
+  local function expandedImage()
+    if SummaryChrome.__rrFairyMenuInfo then return SummaryChrome.__rrFairyMenuInfo end
+    local Dataset = require("src.core.game3.dataset")
+    local cache = Dataset.cache and Dataset.cache()
+    local root = Profile.extractRoot() .. "/pokemon/summary/menu_info.rgba"
+    local raw = cache and cache.read and cache:read(root)
+    if type(raw) == "string" and #raw >= RR_MENU_INFO_W * RR_MENU_INFO_H * 4 then
+      local image = rrImageFromRgba(raw, RR_MENU_INFO_W, RR_MENU_INFO_H)
+      if image then
+        SummaryChrome.__rrFairyMenuInfo = image
+        SummaryChrome._menuInfo = image
+        return image
+      end
+    end
+    return originalImage()
+  end
+
+  SummaryChrome.menuInfoImage = expandedImage
+  SummaryChrome.drawTypeBadge = function(typeId, x, y)
+    if type(typeId) == "string" then
+      if typeId:upper() == "FAIRY" then typeId = RR_FAIRY_TYPE end
+    end
+    typeId = tonumber(typeId) or 0
+    if typeId ~= RR_FAIRY_TYPE then return originalDraw(typeId, x, y) end
+    if not (love and love.graphics) then return end
+    local image = expandedImage()
+    if not image then return originalDraw(0, x, y) end
+    local quad = SummaryChrome.__rrFairyQuad
+    if not quad then
+      quad = love.graphics.newQuad(RR_FAIRY_X, RR_FAIRY_Y, 32, 12,
+        RR_MENU_INFO_W, RR_MENU_INFO_H)
+      SummaryChrome.__rrFairyQuad = quad
+    end
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(image, quad, x, y)
+  end
+  SummaryChrome.__rrFairyBadgeOriginalImage = originalImage
+  SummaryChrome.__rrFairyBadgeOriginalDraw = originalDraw
+  SummaryChrome.__rrFairyBadgePatch = true
+
+  -- Pokédex owns a second hardcoded vanilla 0..17 badge table. Keep it on the
+  -- same expanded RR sheet so every UI surface agrees with Summary/TM Case.
+  local okDex, PokedexChrome = pcall(require, "src.ui.game3.pokedex_chrome")
+  if okDex and PokedexChrome and PokedexChrome.drawTypeBadge
+      and not PokedexChrome.__rrFairyBadgePatch then
+    local dexOriginal = PokedexChrome.drawTypeBadge
+    PokedexChrome.drawTypeBadge = function(typeId, x, y)
+      if type(typeId) == "string" and typeId:upper() == "FAIRY" then
+        typeId = RR_FAIRY_TYPE
+      end
+      if tonumber(typeId) ~= RR_FAIRY_TYPE then
+        return dexOriginal(typeId, x, y)
+      end
+      return SummaryChrome.drawTypeBadge(RR_FAIRY_TYPE, x, y)
+    end
+    PokedexChrome.__rrFairyBadgeOriginal = dexOriginal
+    PokedexChrome.__rrFairyBadgePatch = true
+  end
+  return true
+end
+
 local function graphicsTables(Profile)
   return {
     [0] = {
@@ -501,6 +673,7 @@ function Visuals.installExtraction(Profile)
   installExpandedMapGraphics(Profile)
   installExpandedOwExtraction(Profile)
   installPartyChromeExtraction(Profile)
+  installSummaryChromeExtraction(Profile)
   local OwExtract = require("src.import.gba.ow_extract")
   if not OwExtract.__rrPaletteCountPatch then
     local original = assert(OwExtract.loadPaletteTable)
@@ -524,6 +697,8 @@ function Visuals.installExtraction(Profile)
     playerPaletteTag = 0x1100,
     momPaletteTag = 0x1168,
     stuffulGraphicsId = 0x016E,
+    fairyTypeBadgeExtract = true,
+    fairyTypeBadgeSheetHeight = RR_MENU_INFO_H,
   }
 end
 
@@ -1013,6 +1188,7 @@ end
 
 function Visuals.installRuntime(Profile)
   installSummaryDetailLayout()
+  local fairyBadge = installFairyTypeBadgeRuntime(Profile)
   installPartyGridLayout()
   local battleCoords = installBattleSpriteLayout(Profile)
   local OptionMenu = require("src.ui.game3.option_menu")
@@ -1184,8 +1360,17 @@ function Visuals.installRuntime(Profile)
     battleSpriteCoordSpecies = battleCoords.species,
     cyndaquilBackYOffset = battleCoords.back[155],
     fixedHealthbox = true,
+    fairyTypeBadge = fairyBadge == true,
+    fairyTypeBadgeId = RR_FAIRY_TYPE,
+    fairyTypeBadgeY = RR_FAIRY_Y,
   }
 end
+
+Visuals.rebuildMenuInfo = writeExpandedMenuInfo
+Visuals.RR_MENU_INFO = {
+  width = RR_MENU_INFO_W, height = RR_MENU_INFO_H,
+  fairyType = RR_FAIRY_TYPE, fairyX = RR_FAIRY_X, fairyY = RR_FAIRY_Y,
+}
 
 function Visuals.report()
   return Visuals._paletteReport
