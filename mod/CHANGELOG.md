@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.5.19 — Skills, save safety, dens, bosses, and Fairy UI
+
+- Recover the v0.5.17/v0.5.18 save-scope behavior on top of the certified
+  source: bind Radical Red's private save namespace before cache conversion,
+  upgrade old caches in place, and keep launcher import/export on the FireRed
+  game card instead of switching to a Radical Red pseudo-game.
+- Add the four-skill overworld **L** menu: Auto Run, Time Changer, Infinite
+  Repel, and PokéVial. The latter three unlock from the actual v4.1 key items;
+  PokéVial carries six uses and refills on an ordinary full-party heal.
+- Keep `DexAll` disclosure separate from the real DexNav story unlock, while
+  preserving the reliable R/SELECT registered-search controls.
+- Protect Radical Red's authored boss teams—Gym Leaders, Elite Four,
+  Champions, Rocket admins, Giovanni, Johto leaders, and recurring rivals—
+  from ordinary trainer species randomization.
+- Restore Wishing Piece behavior at cleared raid dens: availability probes do
+  not spend the item, entering the den consumes one, clears that den's done
+  flag, and advances the deterministic raid-number offset for a new encounter.
+- Restore guarded field BGM after item/gift fanfares, preserve the pre-battle
+  map song through League battles, and select Elite Four VS intros from the
+  live Radical Red trainer identity rather than defaulting to the rival art.
+- Preserve CFRU's Fairy type badge at `gMoveMenuInfoIcons` tile `0x100`.
+  The RR cache now adds a separate 128×144 type sheet and maps type 23 to
+  `(0,128,32,12)`, fixing Fairy Pokémon and Fairy moves rendering as NORMAL
+  on affected desktop builds without disturbing the original 128×128 atlas.
+- Bump the private cache schema to 17 with targeted schema-15/16 upgrades so
+  existing ~216 MiB caches do not need a full rebuild for these small additions.
+
 ## 0.5.16 — Battle sprite baselines and reliable DexNav controls
 
 - Extract and install Radical Red's complete 1,376-entry front-sprite,
