@@ -1442,6 +1442,113 @@ local function installTeamPreview(deps)
   return true
 end
 
+
+local function installFanfareRecovery()
+  local okAudio, Audio = pcall(require, "src.core.game3.audio")
+  if not okAudio or not Audio or Audio.__rrFanfareRecovery then return okAudio end
+  Audio.__rrFanfareRecovery = true
+  local originalUpdate = assert(Audio.update)
+  local candidate, recoveryFrames
+
+  local function fieldCandidate()
+    local okBattle, Battle = pcall(require, "src.core.game3.battle")
+    if okBattle and Battle and Battle.isActive and Battle.isActive() then return nil end
+    local cur = Audio.currentSong and Audio.currentSong()
+    return cur and cur.id or Audio._mapSong
+  end
+
+  local function sourceSilent()
+    if Audio._bgmPaused then return true end
+    local src = Audio._bgmSource
+    if src and src.isPlaying then
+      local ok, playing = pcall(src.isPlaying, src)
+      if ok then return not playing end
+    end
+    return Audio._bgmGen ~= nil and src == nil
+  end
+
+  Audio.update = function(dt)
+    local wasFanfare = Audio._fanfareActive == true
+    if wasFanfare and not candidate then candidate = fieldCandidate() end
+    local result = originalUpdate(dt)
+    if wasFanfare and not Audio._fanfareActive and candidate then
+      recoveryFrames = 3
+    end
+    if recoveryFrames then
+      if Audio._fanfareActive then
+        recoveryFrames = nil
+      else
+        recoveryFrames = recoveryFrames - 1
+        if recoveryFrames <= 0 then
+          local cur = Audio.currentSong and Audio.currentSong()
+          local sameSong = cur == nil or cur.id == candidate
+          if sameSong and sourceSilent() and Audio.playSong then
+            -- Android can occasionally leave the queue stopped after a
+            -- fanfare. Restart only when it is actually silent; never stomp a
+            -- script that deliberately changed music during the fanfare.
+            pcall(Audio.playSong, candidate, { restart = true })
+          end
+          recoveryFrames, candidate = nil, nil
+        end
+      end
+    elseif not Audio._fanfareActive then
+      candidate = nil
+    end
+    return result
+  end
+  return true
+end
+
+local function installVsIntroFix()
+  local okBt, BattleTransition = pcall(require, "src.core.game3.battle_transition")
+  if not okBt or not BattleTransition or BattleTransition.__rrVsIntroFix then return okBt end
+  BattleTransition.__rrVsIntroFix = true
+  local originalPick = assert(BattleTransition.pickTrainer)
+  local ID = BattleTransition.ID or {}
+  local byName = {
+    LORELEI = ID.LORELEI,
+    BRUNO = ID.BRUNO,
+    AGATHA = ID.AGATHA,
+    LANCE = ID.LANCE,
+  }
+  BattleTransition.pickTrainer = function(opts)
+    opts = opts or {}
+    local tid = tonumber(opts.trainerId)
+    if tid then
+      local okTr, Trainers = pcall(require, "src.core.game3.scripting.trainers")
+      local row = okTr and Trainers and Trainers.get and Trainers.get(tid)
+      local name = row and tostring(row.name or ""):upper() or ""
+      local mapped = byName[name]
+      if mapped then return mapped end
+    end
+    return originalPick(opts)
+  end
+  return true
+end
+
+local function installBattleMusicReturn(mod)
+  local returnSong
+  mod.hooks:wrap("trainer.party", function(next, trainerClass, trainerId, party)
+    local okA, Audio = pcall(require, "src.core.game3.audio")
+    if okA and Audio then
+      local mapSong = Audio._mapSong
+      if mapSong ~= nil then returnSong = mapSong end
+    end
+    return next(trainerClass, trainerId, party)
+  end, 850)
+
+  mod.events:on("battle.ended", function()
+    if returnSong == nil then return end
+    local okA, Audio = pcall(require, "src.core.game3.audio")
+    if okA and Audio then
+      if Audio.setMapSong then pcall(Audio.setMapSong, returnSong)
+      else Audio._mapSong = returnSong end
+    end
+    returnSong = nil
+  end)
+  return true
+end
+
 function Qol.install(mod, overrides)
   local deps = mergeDefaults(overrides)
   Qol._deps = deps
