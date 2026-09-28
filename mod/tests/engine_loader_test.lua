@@ -300,6 +300,8 @@ assert(exports.qolReport.autoRunSkill == true)
 assert(exports.qolReport.timeChangerSkill == true)
 assert(exports.qolReport.infiniteRepelSkill == true)
 assert(exports.qolReport.pokeVialSkill == true)
+assert(exports.qolReport.pokeRider == true)
+assert(exports.qolReport.pokeRiderItemId == 363)
 assert(exports.qolReport.fanfareBgmRecovery == true)
 assert(exports.qolReport.eliteFourVsIntroFix == true)
 assert(exports.qolReport.battleMusicReturn == true)
@@ -334,6 +336,15 @@ assert(exports.visualReport.usedPaletteCount == 397)
 assert(exports.visualReport.stuffulGraphicsId == 0x016E)
 assert(exports.visualReport.playerPaletteTag == 0x1100)
 assert(exports.visualReport.momPaletteTag == 0x1168)
+
+-- Radical Red repurposes FireRed's Fame Checker slot as Poké Rider.
+do
+  local ItemsData = require("src.core.game3.items_data")
+  local rider = tostring(ItemsData.displayName(363) or "")
+    :gsub("é", "e"):gsub("É", "E"):upper():gsub("[^A-Z0-9]", "")
+  assert(rider == "POKERIDER",
+    "RR item 363 is no longer the Poké Rider expected by the field-use bridge")
+end
 
 -- Fairy lives below the vanilla type-icon sheet in the source ROM.
 do
