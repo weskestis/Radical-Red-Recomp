@@ -71,11 +71,13 @@ end
 
 local ItemsData = {}
 local skillItems = {
+  [363] = { name = "Poké Rider" },
   [601] = { name = "Time Changer" },
   [602] = { name = "Infinite Repel" },
   [603] = { name = "PokéVial" },
 }
 function ItemsData.ensureLoaded() return skillItems end
+function ItemsData.toNumericId(id) return tonumber(id) end
 function ItemsData.displayName(id)
   return (skillItems[id] and skillItems[id].name) or ("ITEM_" .. tostring(id))
 end
@@ -99,6 +101,30 @@ function Party.healAll(party)
   end
 end
 package.loaded["src.core.game3.party"] = Party
+
+local ItemUse = { _onFieldCB = nil }
+function ItemUse.setUpOnFieldCallback(cb)
+  ItemUse._onFieldCB = cb
+  return true
+end
+function ItemUse.runOnFieldCallback()
+  local cb = ItemUse._onFieldCB
+  ItemUse._onFieldCB = nil
+  if cb then cb() end
+  return cb ~= nil
+end
+package.loaded["src.core.game3.item_use"] = ItemUse
+
+local Field = { locked = false }
+function Field.flyTo(section, mon)
+  Field.lastFly = { section = section, mon = mon }
+  return true
+end
+package.loaded["src.core.game3.field"] = Field
+
+local RegionMap = {}
+function RegionMap.show(opts) RegionMap.last = opts end
+package.loaded["src.ui.game3.region_map"] = RegionMap
 
 local RR_Encounters = { hour = nil }
 function RR_Encounters.setOverrideHour(hour) RR_Encounters.hour = hour end
@@ -225,6 +251,8 @@ assert(report.skillItemIds.timeChanger == 601
     and report.skillItemIds.infiniteRepel == 602
     and report.skillItemIds.pokeVial == 603,
   "Radical Red skill key items were not discovered by name")
+assert(report.pokeRider == true and report.pokeRiderItemId == 363,
+  "Poké Rider field-use replacement was not installed")
 assert(report.fanfareBgmRecovery == true
     and report.eliteFourVsIntroFix == true
     and report.battleMusicReturn == true,
@@ -304,6 +332,43 @@ assert(skillState.vialCharges == 6,
 skillPressed = { b = true }
 Skills.handleInput(skillInput)
 skillPressed = {}
+
+-- Radical Red repurposes FireRed item 363 from Fame Checker to Poké Rider.
+-- The hook must defer until the Bag exits, then open Fly-mode visited locations
+-- without ever reaching the stock Fame Checker dispatch.
+do
+  local vanillaCalls = 0
+  local ok, kind = wrappers["item.use"](
+    function()
+      vanillaCalls = vanillaCalls + 1
+      return false, "vanilla", nil
+    end,
+    { session = session }, nil, 363, nil, session.bag)
+  assert(ok == true and kind == "escape" and vanillaCalls == 0,
+    "Poké Rider fell through to FireRed's Fame Checker item handler")
+  assert(ItemUse._onFieldCB ~= nil and RegionMap.last == nil,
+    "Poké Rider did not defer its map until the Bag exit")
+  assert(ItemUse.runOnFieldCallback() == true)
+  assert(RegionMap.last and RegionMap.last.session == session
+      and RegionMap.last.mode == "fly" and Field.locked == true,
+    "Poké Rider did not open the visited-location Fly map")
+  RegionMap.last.onPick("MAPSEC_PALLET_TOWN")
+  assert(Field.lastFly and Field.lastFly.section == "MAPSEC_PALLET_TOWN"
+      and Field.lastFly.mon == session.party[1],
+    "Poké Rider destination did not enter the host travel path")
+  RegionMap.last.onClose()
+  assert(Field.locked == false, "canceling Poké Rider left the field locked")
+
+  -- Numeric slot 363 alone is not enough: vanilla FireRed must retain its
+  -- Fame Checker if this same host module is ever exercised without RR data.
+  skillItems[363].name = "Fame Checker"
+  local passthrough = wrappers["item.use"](
+    function() vanillaCalls = vanillaCalls + 1; return true, "fame_checker" end,
+    { session = session }, nil, 363, nil, session.bag)
+  assert(passthrough == true and vanillaCalls == 1,
+    "numeric item 363 was hijacked without a live Poké Rider identity")
+  skillItems[363].name = "Poké Rider"
+end
 
 -- RR can repurpose trainer IDs/classes; the live trainer name must drive the
 -- Elite Four VS portrait instead of falling through to Blue/Gary.
