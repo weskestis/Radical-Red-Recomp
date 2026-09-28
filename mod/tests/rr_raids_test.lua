@@ -162,7 +162,10 @@ function Natives.yieldHost(ctx, _, start)
 end
 
 local ItemsData = {}
-function ItemsData.toNumericId(id) return tonumber(id) end
+function ItemsData.toNumericId(id)
+  if id == "WISHING_PIECE" then return 195 end
+  return tonumber(id)
+end
 function ItemsData.pocketOf(id) return id == 2 and "POKE_BALLS" or "ITEMS" end
 function ItemsData.displayName(id) return "ITEM_" .. id end
 function ItemsData.fieldUseKind() return "none" end
@@ -171,7 +174,18 @@ function ItemsData.isBerry() return false end
 local deps = {
   Natives = Natives, Flags = Flags, Pokemon = Pokemon,
   Party = { healAll = function() end },
-  Bag = { remove = function() return true end },
+  Bag = {
+    has = function(bag, id, qty)
+      return (tonumber(bag and bag[id]) or 0) >= (tonumber(qty) or 1)
+    end,
+    remove = function(bag, id, qty)
+      qty = tonumber(qty) or 1
+      local have = tonumber(bag and bag[id]) or 0
+      if have < qty then return false end
+      bag[id] = have - qty
+      return true
+    end,
+  },
   ItemsData = ItemsData,
   Rng = { Random = function() return 0 end, Random32 = function() return 0 end },
   bit = require("bit"),
@@ -186,6 +200,8 @@ local deps = {
 local Raids = assert(loadfile("mods/radical_red_experience/lib/rr_raids.lua"))()
 local report = Raids.install(nil, rom, deps)
 assert(report.specialCallbacks == 8 and report.nativeCallbacks == 1 and report.romBacked)
+assert(report.wishingPieceRespawn == true,
+  "raid runtime did not advertise Wishing Piece den reactivation")
 
 -- Source-matched combat thresholds and the v4.1 Max-move registry.
 local combat = assert(Raids._combat)
@@ -292,6 +308,26 @@ assert(ctx.lastBattleOutcome == 1 and not store.flags[Raids.FLAG.RAID_BATTLE])
 
 call(Raids.SPECIAL.ALL_DONE)
 assert(var(0x800D) == 0)
+call(Raids.SPECIAL.SET_DONE)
+assert(store.flags[0x1800 + MAP_INDEX] == true)
+
+-- A cleared den is empty until the player has a Wishing Piece. Merely checking
+-- availability must not spend it; entering the raid flow spends exactly one,
+-- clears the done flag, and advances RR's deterministic raid-number offset.
+session.bag[195] = 0
+call(Raids.SPECIAL.AVAILABLE)
+assert(var(0x800D) == 0, "a cleared den was available without a Wishing Piece")
+session.bag[195] = 1
+local beforeOffset = var(Raids.VAR.RAID_NUMBER_OFFSET)
+call(Raids.SPECIAL.AVAILABLE)
+assert(var(0x800D) == 1 and session.bag[195] == 1,
+  "checking a cleared den either missed or consumed the Wishing Piece")
+call(Raids.SPECIAL.INTRO, adapters)
+assert(session.bag[195] == 0
+    and not store.flags[0x1800 + MAP_INDEX]
+    and var(Raids.VAR.RAID_NUMBER_OFFSET) == (beforeOffset + 1) % 0x10000,
+  "Wishing Piece did not reactivate the den and advance its raid sequence")
+
 call(Raids.SPECIAL.SET_DONE)
 assert(store.flags[0x1800 + MAP_INDEX] == true)
 call(Raids.SPECIAL.ALL_DONE)
