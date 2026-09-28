@@ -598,26 +598,45 @@ function Extractor.ensure(mod, Profile, opts)
     return cachedReport()
   end
 
-  -- v0.5.16's only cache-layout addition over the certified v0.5.15 cache is
-  -- the expanded DPE battle-sprite coordinate table.  Do not throw away and
-  -- regenerate ~216 MiB of otherwise-valid private cache data on Android.
-  -- Verify every old required file first, create only pic_coords.lua from the
-  -- validated ROM, then atomically advance the completion marker to schema 16.
-  if Profile.CACHE_SCHEMA == 16 and markerReady(mod.cache, Profile, {
-      schema = 15, requirePicCoords = false,
-    }) then
-    progress("expanded_tables", 0, 1)
-    local upgradeRom = assert(StreamRom.open(adapter, "firered"))
-    local picCoords = writePicCoords(upgradeRom, mod.cache, Profile)
-    upgradeRom:clearCache()
-    writeMarker(mod.cache, Profile, { maps = maps })
-    assert(markerReady(mod.cache, Profile),
-      "Radical Red schema-15 targeted cache upgrade did not complete")
-    progress("expanded_tables", 1, 1)
-    return cachedReport({
-      upgradedFromSchema = 15,
-      picCoords = picCoords,
-    })
+  -- Preserve established caches across the two small visual-table upgrades.
+  -- Schema 15 lacked DPE battle sprite coordinates; schema 16 has those but
+  -- still carries FireRed's truncated 128x128 menu-info sheet. RR/CFRU places
+  -- Fairy at tile 0x100, so schema 17 rebuilds only that 128x144 sheet.
+  if Profile.CACHE_SCHEMA == 17 then
+    local fromSchema, needsPicCoords
+    if markerReady(mod.cache, Profile, { schema = 16 }) then
+      fromSchema, needsPicCoords = 16, false
+    elseif markerReady(mod.cache, Profile, {
+        schema = 15, requirePicCoords = false,
+      }) then
+      fromSchema, needsPicCoords = 15, true
+    end
+
+    if fromSchema then
+      local Visuals = assert(opts.visuals,
+        "Radical Red targeted visual cache upgrader was not loaded")
+      assert(type(Visuals.rebuildMenuInfo) == "function",
+        "Radical Red Fairy badge cache upgrader is unavailable")
+      progress("expanded_tables", 0, needsPicCoords and 2 or 1)
+      local upgradeRom = assert(StreamRom.open(adapter, "firered"))
+      local picCoords
+      if needsPicCoords then
+        picCoords = writePicCoords(upgradeRom, mod.cache, Profile)
+        progress("expanded_tables", 1, 2)
+      end
+      local menuInfo = Visuals.rebuildMenuInfo(upgradeRom, mod.cache, Profile)
+      upgradeRom:clearCache()
+      writeMarker(mod.cache, Profile, { maps = maps })
+      assert(markerReady(mod.cache, Profile),
+        "Radical Red targeted cache upgrade did not complete")
+      progress("expanded_tables", needsPicCoords and 2 or 1,
+        needsPicCoords and 2 or 1)
+      return cachedReport({
+        upgradedFromSchema = fromSchema,
+        picCoords = picCoords,
+        menuInfo = menuInfo,
+      })
+    end
   end
 
   local World = assert(opts.world,
