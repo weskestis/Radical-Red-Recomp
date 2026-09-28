@@ -1,19 +1,23 @@
 {
   "id": "radical_red_experience",
   "name": "Radical Red",
-  "version": "0.5.16",
+  "version": "0.5.19",
   "api": 2,
   "entry": "main.lua",
   "profile": "total_conversion",
   "game_version": ">=0.0.0-dev <1.0.0",
   "category": "TOTAL_CONVERSION",
   "priority": 900,
-  "permissions": ["engine_internals"],
+  "permissions": [
+    "engine_internals"
+  ],
   "dependencies": [],
   "optional_dependencies": [],
   "conflicts": [],
   "incompatible": [],
-  "games": ["firered"],
+  "games": [
+    "firered"
+  ],
   "experimental": false,
   "required_imports": [
     {
@@ -23,7 +27,9 @@
       "file": "radical_red_v4_1.gba",
       "format": "raw",
       "size": 33554432,
-      "md5": ["8529f3a45d32bce4da637976fcf269d4"]
+      "md5": [
+        "8529f3a45d32bce4da637976fcf269d4"
+      ]
     }
   ],
   "description": "FireRed-only runtime conversion that privately extracts and mounts Radical Red v4.1 as the active Game3 dataset.",
