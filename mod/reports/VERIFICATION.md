@@ -1,8 +1,13 @@
-# Verification report — Radical Red 0.5.16
+# Verification report — Radical Red 0.5.19 release candidate
 
-This report records the release-candidate gate run against the exact Radical
-Red v4.1 ROM. Private ROM bytes and generated assets are not part of the mod
-package.
+The table below preserves the last fully executed exact-ROM release gate from
+0.5.16. Private ROM bytes and generated assets are not part of the mod package.
+
+The 0.5.19 delta has source-level regressions and package checks committed, but
+the current GitHub Actions service has not assigned either certification job a
+runner: every recent run ends with `runner_id: 0` and zero executed steps.
+Therefore the new 0.5.19 rows below are **PENDING**, not PASS, until the exact-ROM
+and ROM-free jobs can actually execute.
 
 | Area | Result |
 |---|---|
@@ -71,6 +76,24 @@ package.
 | No ROM, patch, cache, executable, or extracted asset in package | PASS |
 | Modkit lint / Gen 3 check / strict validation | PASS |
 | Manual graphical device run | NOT RUN |
+
+## 0.5.19 delta gate
+
+| Area | Current status |
+|---|---|
+| Early RR save scope binding and schema-15/16/17 targeted upgrades | PENDING — runner unavailable |
+| FireRed launcher context preserved for RR save import/export | PENDING — runner unavailable |
+| L-button Skills menu: Auto Run / Time Changer / Infinite Repel / PokéVial | PENDING — runner unavailable |
+| Authored boss teams excluded from ordinary trainer randomization | PENDING — runner unavailable |
+| Wishing Piece reactivates a cleared raid den and advances raid sequence | PENDING — runner unavailable |
+| Fairy type badge extracted/rendered from CFRU tile `0x100` | PENDING — runner unavailable |
+| Poké Rider item 363 bypasses Fame Checker and opens Fly-mode travel | PENDING — runner unavailable |
+| U-turn / Volt Switch / Flip Turn perform normal post-hit pivot switching | PENDING — runner unavailable |
+| Full 1,376-row Radical Red cry table and modern-species cry mapping | PENDING — runner unavailable |
+| Full 1,004-move CFRU animation pack / 371 particle rows / 77 backgrounds | PENDING — runner unavailable |
+| U-turn / Fairy Wind / Play Rough / Dazzling Gleam real visual+SFX scripts | PENDING — runner unavailable |
+| Reported modern move scripts contain no unresolved CFRU callback/task pointers | PENDING — runner unavailable |
+| Package manifest / SHA-256 cross-reference / private-content policy | PASS — source-level audit |
 
 The exact loader integration test executes discovery, required-import
 validation, permission setup, extraction, cache mounting, data hydration,
