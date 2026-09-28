@@ -875,6 +875,27 @@ function Runtime.install(mod, Profile, RR_Encounters)
   local okAudio, audioErr = Audio.install(cache, { root = physicalRoot .. "/audio" })
   assert(okAudio, "Radical Red audio pack failed to install: " .. tostring(audioErr))
 
+  -- The stock host's FireRed pack only knows cries for the original species
+  -- range. RR's extraction writes a separate map because DPE's expanded
+  -- gCryTable is indexed directly by internal species id.
+  local cryIdPath = physicalRoot .. "/audio/rr_cry_ids.lua"
+  local cryIdSource = assert(cache:read(cryIdPath),
+    "Radical Red expanded cry-id map is missing")
+  local cryChunk, cryLoadErr = load(cryIdSource, "@" .. cryIdPath, "t", {})
+  assert(cryChunk, "Radical Red cry-id map would not load: " .. tostring(cryLoadErr))
+  local cryOk, cryIds = pcall(cryChunk)
+  assert(cryOk and type(cryIds) == "table",
+    "Radical Red cry-id map is invalid")
+  assert(cryIds[1] == 1
+      and cryIds[Profile.SPECIES_COUNT - 1] == Profile.SPECIES_COUNT - 1,
+    "Radical Red cry-id map does not cover the expanded species table")
+  assert(Audio._pack and Audio._pack.index and Audio._pack.index.cries,
+    "Radical Red expanded cry pack was not installed")
+  assert(tonumber(Audio._pack.index.cryCount) == Profile.SPECIES_COUNT,
+    ("Radical Red cry pack has %s/%d rows")
+      :format(tostring(Audio._pack.index.cryCount), Profile.SPECIES_COUNT))
+  Audio._pack.index.cryIds = cryIds
+
   installChrome(cache)
   local Help = require("src.ui.game3.help_system")
   if Help.reset then Help.reset() end
@@ -892,6 +913,9 @@ function Runtime.install(mod, Profile, RR_Encounters)
     moves = Profile.MOVE_COUNT,
     saveScope = Profile.ID,
     saveTransferBridge = saveTransferBridge == true,
+    expandedCries = true,
+    cryCount = Audio._pack.index.cryCount,
+    cryMappedSpecies = Profile.SPECIES_COUNT - 1,
     expandedScriptVars = expandedScriptVars,
     trueMapBounds = true,
     mapLayoutsAudited = layoutCount,
