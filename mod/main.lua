@@ -31,6 +31,14 @@ return function(mod)
   local Story = loadLocal(mod, "lib/rr_story.lua")
   local Qol = loadLocal(mod, "lib/rr_qol.lua")
 
+  -- Bind the Radical Red save/cart scope before any cache conversion begins.
+  -- v0.5.16 only did this inside Runtime.install, after extraction, so an
+  -- upgrade that had to touch the private cache could briefly resolve the
+  -- vanilla FireRed slot instead of the player's existing Radical Red save.
+  local SaveData = require("src.core.SaveData")
+  if SaveData.setCart then SaveData.setCart(Profile.ID, Profile.SHA1) end
+  if SaveData.refreshSlotResolution then SaveData.refreshSlotResolution() end
+
   mod.exports.species = Profile.SPECIES_COUNT
   mod.exports.moves = Profile.MOVE_COUNT
   mod.exports.maps = Profile.MAP_COUNT
@@ -187,7 +195,7 @@ return function(mod)
     end
     pcall(function()
       mod.cache:write("diagnostics/last_boot_error.txt",
-        "Radical Red 0.5.16 first-launch setup failed\n"
+        "Radical Red 0.5.19 first-launch setup failed\n"
           .. "stage=" .. tostring(boot.stage) .. "\n"
           .. boot.err .. "\n")
     end)
