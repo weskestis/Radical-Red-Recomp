@@ -900,4 +900,6 @@ function Runtime.install(mod, Profile, RR_Encounters)
   }
 end
 
+Runtime._installSaveTransferBridge = installSaveTransferBridge
+
 return Runtime
