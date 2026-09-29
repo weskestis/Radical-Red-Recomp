@@ -67,16 +67,16 @@ local function expandedAudioIndexReady(index, Profile)
   end
 
   -- Counts alone are not enough: a stale/partially written index can retain
-  -- the new schema metadata while its actual row tables are truncated.
-  local lastSong = tonumber(Profile.AUDIO_SONG_COUNT) - 1
-  local lastCry = tonumber(Profile.SPECIES_COUNT) - 1
-  if type(index.songs[0]) ~= "table"
-      or type(index.songs[lastSong]) ~= "table"
-      or type(index.cries[0]) ~= "table"
-      or type(index.cries[lastCry]) ~= "table"
-      or next(index.samples) == nil then
-    return false
+  -- the new schema metadata while its actual row tables are truncated or have
+  -- a hole in the middle. Validate the complete expanded row ranges.
+  for song = 0, tonumber(Profile.AUDIO_SONG_COUNT) - 1 do
+    local row = index.songs[song]
+    if type(row) ~= "table" or tonumber(row.id) ~= song then return false end
   end
+  for cry = 0, tonumber(Profile.SPECIES_COUNT) - 1 do
+    if type(index.cries[cry]) ~= "table" then return false end
+  end
+  if next(index.samples) == nil then return false end
 
   -- The expanded audio cache must belong to the exact private RR v4.1 ROM,
   -- not a FireRed audio index copied into a schema-19 directory.
@@ -94,12 +94,10 @@ local function expandedBattleAnimPackReady(pack, Profile)
       or type(pack.animBgs) ~= "table" then
     return false
   end
-  local lastMove = tonumber(Profile.MOVE_COUNT) - 1
-  if type(pack.moves[0]) ~= "table"
-      or type(pack.moves[lastMove]) ~= "table"
-      or next(pack.labels) == nil then
-    return false
+  for move = 0, tonumber(Profile.MOVE_COUNT) - 1 do
+    if type(pack.moves[move]) ~= "table" then return false end
   end
+  if next(pack.labels) == nil then return false end
   local tagCount, bgCount = 0, 0
   for _ in pairs(pack.tagPals) do tagCount = tagCount + 1 end
   for _ in pairs(pack.animBgs) do bgCount = bgCount + 1 end
