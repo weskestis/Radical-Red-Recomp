@@ -1788,11 +1788,11 @@ do
     for i, step in ipairs(steps) do
       if step.kind == "switch_out" and not switchOutAt then
         switchOutAt = i
-      elseif step.kind == "msg"
-          and step.data and step.data.id == "STRINGID_SWITCHINMON"
-          and not goAt then
+      elseif switchOutAt and step.kind == "msg" and not goAt then
+        -- BattleText.key() resolves STRINGID_SWITCHINMON to a concrete
+        -- sText_* key (for example sText_GoPkmn2) before this reaches AnimSeq.
         goAt = i
-      elseif step.kind == "switch_in" and not switchInAt then
+      elseif switchOutAt and step.kind == "switch_in" and not switchInAt then
         switchInAt = i
       end
     end
