@@ -545,10 +545,16 @@ local function extractExpandedAudio(data, cache, Profile)
     "Radical Red expanded audio extraction needs the complete validated ROM")
   local ptr = leU32(data, assert(Profile.OFFSET.cryTablePointerSlot))
   local cryTable = gbaOffset(ptr, Profile.ROM_SIZE)
+  local songPtr = leU32(data, assert(Profile.OFFSET.songTablePointerSlot))
+  local songTable = gbaOffset(songPtr, Profile.ROM_SIZE)
   assert(cryTable,
     ("Radical Red gCryTable pointer is invalid: %s"):format(tostring(ptr)))
   assert(cryTable + Profile.SPECIES_COUNT * 12 <= #data,
     "Radical Red expanded gCryTable runs past the ROM")
+  assert(songTable,
+    ("Radical Red gSongTable pointer is invalid: %s"):format(tostring(songPtr)))
+  assert(songTable + Profile.AUDIO_SONG_COUNT * 8 <= #data,
+    "Radical Red expanded gSongTable runs past the ROM")
 
   -- DPE's expanded source declares gCryTable[NUM_SPECIES] and places
   -- Bulbasaur at row SPECIES_BULBASAUR (=1). Validate the exact private ROM
@@ -565,6 +571,8 @@ local function extractExpandedAudio(data, cache, Profile)
     "Radical Red requires FireRed audio metadata"))
   Versions.AUDIO.cry_table = cryTable
   Versions.AUDIO.cry_count = Profile.SPECIES_COUNT
+  Versions.AUDIO.song_table = songTable
+  Versions.AUDIO.song_count = Profile.AUDIO_SONG_COUNT
 
   local ExtractAudio = require("src.import.gba.extract_audio")
   -- extract_audio captures these counts when its module is first required.
@@ -579,10 +587,15 @@ local function extractExpandedAudio(data, cache, Profile)
   assert(index.cryCount == Profile.SPECIES_COUNT,
     ("Radical Red cry extraction truncated at %s rows")
       :format(tostring(index.cryCount)))
+  assert(index.songCount == Profile.AUDIO_SONG_COUNT,
+    ("Radical Red song/SFX extraction truncated at %s rows")
+      :format(tostring(index.songCount)))
   writeRrCryIds(cache, Profile)
   return {
     cryTable = cryTable,
     cryCount = index.cryCount,
+    songTable = songTable,
+    songCount = index.songCount,
     bulbasaurToneType = toneType,
   }
 end
@@ -771,19 +784,25 @@ function Extractor.ensure(mod, Profile, opts)
 
   -- Preserve established caches across the small table upgrades. Schema 15
   -- lacked DPE battle-sprite coordinates; schema 16 lacked the CFRU Fairy
-  -- badge row; schema 17 still had FireRed's 388-row cry extraction. Schema 18
-  -- rebuilds only what each older cache is missing, including RR's expanded
-  -- 1,376-row cry table, rather than regenerating the ~216 MiB world cache.
-  if Profile.CACHE_SCHEMA == 18 then
-    local fromSchema, needsPicCoords, needsMenuInfo
-    if markerReady(mod.cache, Profile, { schema = 17 }) then
-      fromSchema, needsPicCoords, needsMenuInfo = 17, false, false
+  -- badge row; schema 17 still had FireRed's short cry extraction; schema 18
+  -- added expanded cries/animations but still used FireRed's 347-row song
+  -- table. Schema 19 rebuilds only the pieces each older cache lacks.
+  if Profile.CACHE_SCHEMA == 19 then
+    local fromSchema, needsPicCoords, needsMenuInfo, needsBattleAnims
+    if markerReady(mod.cache, Profile, { schema = 18 }) then
+      fromSchema, needsPicCoords, needsMenuInfo, needsBattleAnims =
+        18, false, false, false
+    elseif markerReady(mod.cache, Profile, { schema = 17 }) then
+      fromSchema, needsPicCoords, needsMenuInfo, needsBattleAnims =
+        17, false, false, true
     elseif markerReady(mod.cache, Profile, { schema = 16 }) then
-      fromSchema, needsPicCoords, needsMenuInfo = 16, false, true
+      fromSchema, needsPicCoords, needsMenuInfo, needsBattleAnims =
+        16, false, true, true
     elseif markerReady(mod.cache, Profile, {
         schema = 15, requirePicCoords = false,
       }) then
-      fromSchema, needsPicCoords, needsMenuInfo = 15, true, true
+      fromSchema, needsPicCoords, needsMenuInfo, needsBattleAnims =
+        15, true, true, true
     end
 
     if fromSchema then
@@ -794,8 +813,8 @@ function Extractor.ensure(mod, Profile, opts)
           "Radical Red Fairy badge cache upgrader is unavailable")
       end
 
-      local total = 2 + (needsPicCoords and 1 or 0)
-        + (needsMenuInfo and 1 or 0)
+      local total = 1 + (needsBattleAnims and 1 or 0)
+        + (needsPicCoords and 1 or 0) + (needsMenuInfo and 1 or 0)
       local step = 0
       progress("expanded_tables", step, total)
       local picCoords, menuInfo
@@ -811,10 +830,13 @@ function Extractor.ensure(mod, Profile, opts)
         step = step + 1
         progress("expanded_tables", step, total)
       end
-      local battleAnims = extractExpandedBattleAnims(
-        upgradeRom, mod.cache, Profile)
-      step = step + 1
-      progress("expanded_tables", step, total)
+      local battleAnims
+      if needsBattleAnims then
+        battleAnims = extractExpandedBattleAnims(
+          upgradeRom, mod.cache, Profile)
+        step = step + 1
+        progress("expanded_tables", step, total)
+      end
       upgradeRom:clearCache()
 
       -- Audio extraction needs the raw WaveData payloads. Read the validated
