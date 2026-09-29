@@ -102,8 +102,9 @@ function Party.healAll(party)
 end
 package.loaded["src.core.game3.party"] = Party
 
-local ItemUse = { _onFieldCB = nil }
+local ItemUse = { _onFieldCB = nil, defer = true }
 function ItemUse.setUpOnFieldCallback(cb)
+  if ItemUse.defer == false then return false end
   ItemUse._onFieldCB = cb
   return true
 end
@@ -365,6 +366,36 @@ do
     "Poké Rider destination did not enter the host travel path")
   RegionMap.last.onClose()
   assert(Field.locked == false, "canceling Poké Rider left the field locked")
+
+  -- Registered/direct use has no Bag exit callback. It must open immediately
+  -- and still unlock cleanly when the map is canceled.
+  ItemUse.defer = false
+  RegionMap.last = nil
+  local directOk, directKind = wrappers["item.use"](
+    function() vanillaCalls = vanillaCalls + 1; return false, "vanilla" end,
+    { session = session }, nil, 363, nil, session.bag)
+  assert(directOk == true and directKind == "poke_rider"
+      and vanillaCalls == 0 and RegionMap.last
+      and RegionMap.last.mode == "fly" and Field.locked == true,
+    "direct/registered Poké Rider did not open Fly mode immediately")
+  RegionMap.last.onClose()
+  assert(Field.locked == false,
+    "direct/registered Poké Rider cancel left the field locked")
+
+  -- If the region-map renderer fails to open, the item must fail safely and
+  -- release the field lock instead of softlocking movement.
+  local realRegionShow = RegionMap.show
+  RegionMap.show = function() error("forced region map failure") end
+  RegionMap.last = nil
+  local failOk, failKind, failErr = wrappers["item.use"](
+    function() vanillaCalls = vanillaCalls + 1; return false, "vanilla" end,
+    { session = session }, nil, 363, nil, session.bag)
+  RegionMap.show = realRegionShow
+  assert(failOk == false and failKind == "poke_rider"
+      and tostring(failErr):find("forced region map failure", 1, true)
+      and Field.locked == false and vanillaCalls == 0,
+    "Poké Rider map-open failure left the field locked or fell through")
+  ItemUse.defer = true
 
   -- Numeric slot 363 alone is not enough: vanilla FireRed must retain its
   -- Fame Checker if this same host module is ever exercised without RR data.
