@@ -120,4 +120,22 @@ bad.romSha1 = "firered"
 assert(not Extractor.expandedAudioIndexReady(bad, AudioProfile),
   "schema-19 audio accepted an index from the wrong ROM")
 
-print("PASS stream_rom_compat_test: strings, byte arrays, get-only, Android tilesets, schema19 audio")
+local expectedPlans = {
+  [15] = { picCoords = true,  menuInfo = true,  battleAnims = true,  audio = true },
+  [16] = { picCoords = false, menuInfo = true,  battleAnims = true,  audio = true },
+  [17] = { picCoords = false, menuInfo = false, battleAnims = true,  audio = true },
+  [18] = { picCoords = false, menuInfo = false, battleAnims = false, audio = true },
+}
+for schema, expected in pairs(expectedPlans) do
+  local plan = assert(Extractor.cacheUpgradePlan(schema),
+    "missing targeted upgrade plan for schema " .. schema)
+  for key, value in pairs(expected) do
+    assert(plan[key] == value,
+      ("schema %d upgrade plan changed %s"):format(schema, key))
+  end
+end
+assert(Extractor.cacheUpgradePlan(14) == nil
+    and Extractor.cacheUpgradePlan(19) == nil,
+  "targeted cache upgrader accepted an unsupported source schema")
+
+print("PASS stream_rom_compat_test: strings, byte arrays, get-only, Android tilesets, schema15-19 cache")
