@@ -1487,7 +1487,7 @@ local function installPokeRider(mod, deps)
     local Field = require("src.core.game3.field")
     local RegionMap = require("src.ui.game3.region_map")
     Field.locked = true
-    RegionMap.show({
+    local okShow, showErr = pcall(RegionMap.show, {
       session = session,
       mode = "fly",
       onPick = function(section)
@@ -1501,6 +1501,10 @@ local function installPokeRider(mod, deps)
         Field.locked = false
       end,
     })
+    if not okShow then
+      Field.locked = false
+      return false, showErr
+    end
     return true
   end
 
@@ -1529,7 +1533,10 @@ local function installPokeRider(mod, deps)
 
       -- Registered-key-item or other direct field use: there is no Bag to
       -- dismiss, so opening the Rider map immediately is the correct path.
-      open()
+      local opened, openErr = open()
+      if not opened then
+        return false, "poke_rider", tostring(openErr or "map unavailable")
+      end
       return true, "poke_rider", nil
     end, 1200)
 
