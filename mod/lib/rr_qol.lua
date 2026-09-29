@@ -673,6 +673,15 @@ local function installDexNav(mod, deps)
     end
     local rPressed = edge("r")
     local selectPressed = edge("select")
+
+    -- Serialized Gen III saves use 0 for ITEM_NONE. Most stock import paths
+    -- normalize that to nil, but older/original .lua saves can preserve the
+    -- numeric zero. Repair it before the stock SELECT handler runs.
+    local session = game.session or sessionOf(deps)
+    if session and tonumber(session.registeredItem) == 0 then
+      session.registeredItem = nil
+    end
+
     if game.phase ~= "field" or Stack.busy() then return false end
     local okBattle, Battle = pcall(require, "src.core.game3.battle")
     if okBattle and Battle and Battle.isActive and Battle.isActive() then
@@ -683,7 +692,6 @@ local function installDexNav(mod, deps)
     if not flagOn(deps, Qol.FLAG.DEX_NAV) then
       return false
     end
-    local session = game.session or sessionOf(deps)
     if rPressed then return DexNav.quickScan(game, session) end
     -- Android's default overlay has SELECT but no R shoulder. Preserve
     -- FireRed's registered-key-item binding whenever one exists; otherwise
