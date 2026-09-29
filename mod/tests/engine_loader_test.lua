@@ -563,12 +563,53 @@ do
 end
 
 -- Fairy lives below the vanilla type-icon sheet in the source ROM.
+-- Verify both the extracted pixels and the actual runtime renderer so the
+-- sheet cannot exist while Summary/TM/Pokedex silently fall back to NORMAL.
 do
   local Dataset = require("src.core.game3.dataset")
   local bytes = Dataset.cache():read(
     "data/generated/gba/pokemon/summary/menu_info_rr.rgba")
   assert(type(bytes) == "string" and #bytes == 128 * 144 * 4,
     "expanded Fairy type sheet was not preserved")
+
+  local SummaryChrome = require("src.ui.game3.summary_chrome")
+  local PokedexChrome = require("src.ui.game3.pokedex_chrome")
+  assert(SummaryChrome.__rrFairyBadgePatch == true
+      and PokedexChrome.__rrFairyBadgePatch == true,
+    "Fairy badge runtime patches were not installed on every UI surface")
+
+  local oldNewQuad = love.graphics.newQuad
+  local oldDraw = love.graphics.draw
+  local oldQuad = SummaryChrome.__rrFairyQuad
+  local quadArgs, draws = nil, {}
+  SummaryChrome.__rrFairyQuad = nil
+  love.graphics.newQuad = function(x, y, w, h, sw, sh)
+    quadArgs = { x, y, w, h, sw, sh }
+    return { __rrFairyTestQuad = true }
+  end
+  love.graphics.draw = function(image, quad, x, y, ...)
+    draws[#draws + 1] = { image = image, quad = quad, x = x, y = y }
+  end
+
+  local okDraw, drawErr = pcall(function()
+    SummaryChrome.drawTypeBadge(23, 17, 29)
+    PokedexChrome.drawTypeBadge("FAIRY", 31, 43)
+  end)
+  love.graphics.newQuad = oldNewQuad
+  love.graphics.draw = oldDraw
+  SummaryChrome.__rrFairyQuad = oldQuad
+  assert(okDraw, "Fairy type badge renderer crashed: " .. tostring(drawErr))
+  assert(quadArgs
+      and quadArgs[1] == 0 and quadArgs[2] == 128
+      and quadArgs[3] == 32 and quadArgs[4] == 12
+      and quadArgs[5] == 128 and quadArgs[6] == 144,
+    "Fairy badge renderer used the wrong RR sheet crop")
+  assert(#draws == 2
+      and draws[1].quad and draws[1].quad.__rrFairyTestQuad
+      and draws[1].x == 17 and draws[1].y == 29
+      and draws[2].quad and draws[2].quad.__rrFairyTestQuad
+      and draws[2].x == 31 and draws[2].y == 43,
+    "Fairy badge did not render through Summary and Pokedex surfaces")
 end
 
 -- Battle sprites must use RR's expanded DPE coordinates rather than the
