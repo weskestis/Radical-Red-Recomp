@@ -1611,28 +1611,54 @@ local function hasWishingPiece(deps)
     and deps.Bag.has(session.bag, id, 1) == true
 end
 
-local function reactivateDenWithWishingPiece(deps, ctx, mapIndex)
+local function previewWishingPieceRaid(deps, rom, ctx)
+  local oldOffset = getVar(deps, ctx, VAR.RAID_NUMBER_OFFSET)
+  local nextOffset = (oldOffset + 1) % 0x10000
+  local oldCurrent, oldStars, oldStable = state.current, state.stars, state.stable
+
+  -- determineRaid is intentionally run against the prospective offset before
+  -- inventory or the den-done flag is touched.  Restore every preview mutation
+  -- before returning so AVAILABLE remains a pure probe.
+  setVar(deps, ctx, VAR.RAID_NUMBER_OFFSET, nextOffset)
+  local raid = determineRaid(deps, rom, ctx)
+  setVar(deps, ctx, VAR.RAID_NUMBER_OFFSET, oldOffset)
+  state.current, state.stars, state.stable = oldCurrent, oldStars, oldStable
+  return raid, nextOffset
+end
+
+local function canReactivateDenWithWishingPiece(deps, rom, ctx, mapIndex)
   if mapIndex == nil or not getFlag(deps, ctx, FIRST_RAID_BATTLE_FLAG + mapIndex) then
-    return true, false
+    return false
+  end
+  if not hasWishingPiece(deps) then return false end
+  local raid = previewWishingPieceRaid(deps, rom, ctx)
+  return raid ~= nil
+end
+
+local function reactivateDenWithWishingPiece(deps, rom, ctx, mapIndex)
+  if mapIndex == nil or not getFlag(deps, ctx, FIRST_RAID_BATTLE_FLAG + mapIndex) then
+    return true, nil
   end
   local session = sessionOf(deps)
   local id = wishingPieceId(deps)
   if not (id and session and session.bag and deps.Bag
       and deps.Bag.has and deps.Bag.remove
       and deps.Bag.has(session.bag, id, 1)) then
-    return false, false
+    return false, nil
   end
-  if not deps.Bag.remove(session.bag, id, 1) then return false, false end
 
-  -- RR's stable den RNG includes this save variable specifically so a
-  -- Wishing Piece advances the den to the next deterministic encounter instead
-  -- of immediately recreating the raid that was just cleared.
-  setVar(deps, ctx, VAR.RAID_NUMBER_OFFSET,
-    (getVar(deps, ctx, VAR.RAID_NUMBER_OFFSET) + 1) % 0x10000)
+  -- Prove the next deterministic encounter exists before spending the item.
+  -- A stale/invalid done flag must never eat a Wishing Piece.
+  local raid, nextOffset = previewWishingPieceRaid(deps, rom, ctx)
+  if not raid then return false, nil end
+  if not deps.Bag.remove(session.bag, id, 1) then return false, nil end
+
+  setVar(deps, ctx, VAR.RAID_NUMBER_OFFSET, nextOffset)
   setFlag(deps, ctx, FIRST_RAID_BATTLE_FLAG + mapIndex, false)
-  state.current, state.foe, state.selectedPartner = nil, nil, nil
-  state.stars, state.stable = nil, nil
-  return true, true
+  state.current = raid
+  state.foe, state.selectedPartner = nil, nil
+  state.stars, state.stable = raid.stars, raid.stable
+  return true, raid
 end
 
 local function mapHasAnyRaid(rom, mapIndex)
@@ -1708,7 +1734,7 @@ local function buildHandlers(deps, rom)
     -- Piece. The actual item spend is deferred to INTRO so merely probing the
     -- den's availability cannot consume inventory.
     local available = facility or (not done and raid ~= nil)
-      or (done and hasWishingPiece(deps))
+      or (done and canReactivateDenWithWishingPiece(deps, rom, ctx, mapIndex))
     setResult(deps, ctx, available and 1 or 0)
     return false, available and 1 or 0
   end
@@ -1716,11 +1742,13 @@ local function buildHandlers(deps, rom)
   H[Raids.SPECIAL.INTRO] = function(ctx, adapters)
     setResult(deps, ctx, 0)
     local mapIndex = currentMapIndex(deps)
+    local reactivated
     if not getFlag(deps, ctx, FLAG.BATTLE_FACILITY) then
-      local ok = reactivateDenWithWishingPiece(deps, ctx, mapIndex)
+      local ok
+      ok, reactivated = reactivateDenWithWishingPiece(deps, rom, ctx, mapIndex)
       if not ok then return false end
     end
-    local raid = determineRaid(deps, rom, ctx)
+    local raid = reactivated or determineRaid(deps, rom, ctx)
     if not raid then return false end
     return choosePartner(deps, rom, ctx, adapters, raid)
   end
