@@ -1429,6 +1429,63 @@ do
   assert(normalizedItemName(ItemsData.displayName(skillIds.infiniteRepel)) == "INFINITEREPEL")
   assert(normalizedItemName(ItemsData.displayName(skillIds.pokeVial)) == "POKEVIAL")
 
+  -- Exercise the actual pinned controller path for the original device report:
+  -- LOVE leftshoulder -> Input logical "l" -> queued edge -> core.update ->
+  -- rr_skills stack layer. Also prove a held shoulder cannot reopen the menu
+  -- until a real release re-arms the edge.
+  do
+    local Stack = require("src.ui.game3.stack")
+    local Field = require("src.core.game3.field")
+    local Battle = require("src.core.game3.battle")
+    local input = game.input
+    local savedVm = Space.vm
+    local savedLocked = Field.locked
+    local savedBattleActive = Battle.isActive
+
+    Stack.clear()
+    Space.vm = nil
+    Field.locked = false
+    Battle.isActive = function() return false end
+    input:reset()
+
+    input:gamepadpressed(nil, "leftshoulder")
+    local sawQueuedL = false
+    for _, key in ipairs(input.pressQueue or {}) do
+      if key == "l" then sawQueuedL = true break end
+    end
+    assert(sawQueuedL and input:isDown("l"),
+      "pinned leftshoulder input did not emit the logical L edge")
+    loader.hooks:call("core.update", function() return "updated" end,
+      { phase = "field", session = session, input = input }, 1 / 60)
+    local firstSkillLayer = Stack.top()
+    assert(firstSkillLayer and firstSkillLayer.id == "rr_skills",
+      "physical left shoulder did not open the live Radical Red Skills menu")
+    firstSkillLayer.mod.close(true)
+
+    -- Still physically held: no second open.
+    loader.hooks:call("core.update", function() return "updated" end,
+      { phase = "field", session = session, input = input }, 1 / 60)
+    assert(Stack.top() == nil,
+      "held L reopened the Skills menu without a release edge")
+
+    input:gamepadreleased(nil, "leftshoulder")
+    loader.hooks:call("core.update", function() return "updated" end,
+      { phase = "field", session = session, input = input }, 1 / 60)
+    input:gamepadpressed(nil, "leftshoulder")
+    loader.hooks:call("core.update", function() return "updated" end,
+      { phase = "field", session = session, input = input }, 1 / 60)
+    local secondSkillLayer = Stack.top()
+    assert(secondSkillLayer and secondSkillLayer.id == "rr_skills",
+      "Skills menu did not re-arm after releasing and pressing L again")
+    secondSkillLayer.mod.close(true)
+
+    input:gamepadreleased(nil, "leftshoulder")
+    input:reset()
+    Space.vm = savedVm
+    Field.locked = savedLocked
+    Battle.isActive = savedBattleActive
+  end
+
   -- Find a boss from the live extracted trainer table and prove the enabled
   -- species randomizer preserves the authored party while an ordinary trainer
   -- is still randomized below.
