@@ -72,8 +72,8 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   guaranteed catch, early-item, and Viridian level-cap paths are exercised.
 - DexNav: story unlock and DexAll disclosure, Register/Scan/Cancel, saved
   registration and search levels, chain lifecycle, latched R/SELECT controls,
-  key-item SELECT preservation, fishing rods, complete generated battle
-  payloads, and CFRU search bonuses are live.
+  key-item SELECT preservation, serialized ITEM_NONE=0 repair, fishing rods,
+  complete generated battle payloads, and CFRU search bonuses are live.
 - Party selection: the live close-before-select callback commits slot two
   before the next native; Combee eligibility and gender mutation are verified.
 - Battle text: all expanded CFRU placeholders present in the v4.1 bundle are
