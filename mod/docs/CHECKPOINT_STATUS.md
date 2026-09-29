@@ -28,8 +28,9 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   every byte.
 - Private cache schema: 19; targeted upgrades from schemas 15–18 preserve
   the established world cache, with 18→19 remaining audio-only. Schema-19
-  readiness now rejects truncated song/cry/sample tables and wrong-ROM audio
-  indexes even when their headline row counts are correct.
+  readiness rejects truncated song/cry/sample tables and wrong-ROM audio
+  indexes even when their headline row counts are correct; schemas 18/19 also
+  reject incomplete 1,004-move / 371-palette / 77-background animation packs.
 - Wild encounters: 134 maps and 4,866 valid slots across the base and
   relocated 83-map day/night tables; all 177 `SPECIES_NONE` placeholders are
   removed, and a final runtime guard rejects invalid wild battles.
