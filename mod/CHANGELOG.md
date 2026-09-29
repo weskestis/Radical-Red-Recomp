@@ -46,6 +46,8 @@
   rebuilt as needed; schema 18→19 is audio-only. Schema-19 readiness also
   validates the actual first/last song and cry rows, sample index, and RR ROM
   identity so a partially written audio cache cannot pass on counts alone.
+  Schema 18/19 animation packs likewise require the first/last move rows,
+  callback labels, all 371 particle palette rows, and all 77 backgrounds.
 
 ## 0.5.16 — Battle sprite baselines and reliable DexNav controls
 
