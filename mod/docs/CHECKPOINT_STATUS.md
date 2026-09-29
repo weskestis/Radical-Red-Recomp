@@ -87,7 +87,8 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 - Launcher/engine source modifications: none.
 - 0.5.19 additions: FireRed-context RR save transfer with legacy-stamp
   normalization and failed-import rollback, four-skill L menu,
-  authored-boss preservation, Wishing Piece den reactivation, CFRU Fairy badge,
+  authored-boss preservation, transactional Wishing Piece den reactivation,
+  CFRU Fairy badge,
   guarded field-BGM recovery, pre-battle map-song restoration, live Elite Four
   VS-intro identity, damaging pivot moves, the full 1,376-row cry table,
   CFRU's 526-row song/SFX table, and the full 1,004-move animation pack with
