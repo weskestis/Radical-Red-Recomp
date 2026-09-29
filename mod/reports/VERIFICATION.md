@@ -90,6 +90,7 @@ and ROM-free jobs can actually execute.
 | Poké Rider item 363 bypasses Fame Checker and opens Fly-mode travel | PENDING — runner unavailable |
 | U-turn / Volt Switch / Flip Turn perform normal post-hit pivot switching | PENDING — runner unavailable |
 | Full 1,376-row Radical Red cry table and modern-species cry mapping | PENDING — runner unavailable |
+| CFRU/RR 526-row song/SFX table and expanded-move sound references | PENDING — runner unavailable |
 | Full 1,004-move CFRU animation pack / 371 particle rows / 77 backgrounds | PENDING — runner unavailable |
 | U-turn / Fairy Wind / Play Rough / Dazzling Gleam real visual+SFX scripts | PENDING — runner unavailable |
 | Reported modern move scripts contain no unresolved CFRU callback/task pointers | PENDING — runner unavailable |
