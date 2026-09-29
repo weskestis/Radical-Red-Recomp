@@ -138,4 +138,50 @@ assert(Extractor.cacheUpgradePlan(14) == nil
     and Extractor.cacheUpgradePlan(19) == nil,
   "targeted cache upgrader accepted an unsupported source schema")
 
+local AnimProfile = {
+  MOVE_COUNT = 1004,
+  BATTLE_ANIM_TAG_COUNT = 371,
+  BATTLE_ANIM_BG_COUNT = 77,
+}
+local fullAnim = {
+  moves = { [0] = { { op = "end" } }, [1003] = { { op = "end" } } },
+  labels = { sentinel = { { op = "end" } } },
+  tagPals = {},
+  animBgs = {},
+}
+for i = 0, 370 do fullAnim.tagPals["TAG_" .. i] = {} end
+for i = 0, 76 do fullAnim.animBgs[i] = { file = tostring(i) .. ".png" } end
+assert(Extractor.expandedBattleAnimPackReady(fullAnim, AnimProfile),
+  "complete expanded battle-animation pack was rejected")
+
+local badAnim = {
+  moves = { [0] = fullAnim.moves[0] },
+  labels = fullAnim.labels,
+  tagPals = fullAnim.tagPals,
+  animBgs = fullAnim.animBgs,
+}
+assert(not Extractor.expandedBattleAnimPackReady(badAnim, AnimProfile),
+  "animation cache accepted a missing final move row")
+
+badAnim = {
+  moves = fullAnim.moves, labels = {},
+  tagPals = fullAnim.tagPals, animBgs = fullAnim.animBgs,
+}
+assert(not Extractor.expandedBattleAnimPackReady(badAnim, AnimProfile),
+  "animation cache accepted an empty callback/label table")
+
+badAnim = {
+  moves = fullAnim.moves, labels = fullAnim.labels,
+  tagPals = {}, animBgs = fullAnim.animBgs,
+}
+assert(not Extractor.expandedBattleAnimPackReady(badAnim, AnimProfile),
+  "animation cache accepted missing particle palette rows")
+
+badAnim = {
+  moves = fullAnim.moves, labels = fullAnim.labels,
+  tagPals = fullAnim.tagPals, animBgs = { [0] = fullAnim.animBgs[0] },
+}
+assert(not Extractor.expandedBattleAnimPackReady(badAnim, AnimProfile),
+  "animation cache accepted truncated background rows")
+
 print("PASS stream_rom_compat_test: strings, byte arrays, get-only, Android tilesets, schema15-19 cache")
