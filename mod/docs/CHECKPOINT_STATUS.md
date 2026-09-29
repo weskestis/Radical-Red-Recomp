@@ -105,7 +105,8 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   VS-intro identity, damaging pivot moves, the full 1,376-row cry table with
   a 1,375/1,375 playable-species identity/sample census,
   CFRU's 526-row song/SFX table, and the full 1,004-move animation pack with
-  371 particle rows and 77 animation backgrounds.
+  371 particle rows and 77 animation backgrounds. The exact-ROM animation gate
+  audits all 1,004 move pointers, decoded dependency graphs, and referenced SFX.
 
 ## 0.5.19 certification state
 
