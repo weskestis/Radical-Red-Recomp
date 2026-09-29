@@ -26,7 +26,7 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   byte-at-a-time `get`; tileset binary reads do not require one host API, and
   numeric slices are copied page-by-page rather than updating LRU state for
   every byte.
-- Private cache schema: 18.
+- Private cache schema: 19.
 - Wild encounters: 134 maps and 4,866 valid slots across the base and
   relocated 83-map day/night tables; all 177 `SPECIES_NONE` placeholders are
   removed, and a final runtime guard rejects invalid wild battles.
@@ -87,8 +87,9 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 - Launcher/engine source modifications: none.
 - 0.5.19 additions: FireRed-context RR save transfer, four-skill L menu,
   authored-boss preservation, Wishing Piece den reactivation, CFRU Fairy badge,
-  damaging pivot moves, the full 1,376-row cry table, and the full 1,004-move
-  CFRU animation pack with 371 particle rows and 77 animation backgrounds.
+  damaging pivot moves, the full 1,376-row cry table, CFRU's 526-row song/SFX
+  table, and the full 1,004-move animation pack with 371 particle rows and
+  77 animation backgrounds.
 
 ## 0.5.19 certification state
 
