@@ -56,6 +56,36 @@ local function requireFiles(cache, files)
   return true
 end
 
+local function expandedAudioIndexReady(index, Profile)
+  if type(index) ~= "table"
+      or tonumber(index.cryCount) ~= tonumber(Profile.SPECIES_COUNT)
+      or tonumber(index.songCount) ~= tonumber(Profile.AUDIO_SONG_COUNT)
+      or type(index.songs) ~= "table"
+      or type(index.cries) ~= "table"
+      or type(index.samples) ~= "table" then
+    return false
+  end
+
+  -- Counts alone are not enough: a stale/partially written index can retain
+  -- the new schema metadata while its actual row tables are truncated.
+  local lastSong = tonumber(Profile.AUDIO_SONG_COUNT) - 1
+  local lastCry = tonumber(Profile.SPECIES_COUNT) - 1
+  if type(index.songs[0]) ~= "table"
+      or type(index.songs[lastSong]) ~= "table"
+      or type(index.cries[0]) ~= "table"
+      or type(index.cries[lastCry]) ~= "table"
+      or next(index.samples) == nil then
+    return false
+  end
+
+  -- The expanded audio cache must belong to the exact private RR v4.1 ROM,
+  -- not a FireRed audio index copied into a schema-19 directory.
+  if Profile.SHA1 and tostring(index.romSha1 or "") ~= tostring(Profile.SHA1) then
+    return false
+  end
+  return true
+end
+
 local function markerReady(cache, Profile, opts)
   opts = opts or {}
   local root = Profile.extractRoot()
@@ -120,11 +150,7 @@ local function markerReady(cache, Profile, opts)
   if not essentialsOk then return false end
   if expectedSchema >= 19 then
     local audioIndex = loadLua(cache, root .. "/audio/index.lua")
-    if type(audioIndex) ~= "table"
-        or tonumber(audioIndex.cryCount) ~= Profile.SPECIES_COUNT
-        or tonumber(audioIndex.songCount) ~= Profile.AUDIO_SONG_COUNT then
-      return false
-    end
+    if not expandedAudioIndexReady(audioIndex, Profile) then return false end
   end
   local shards = loadLua(cache, root .. "/scripts/rr_shards/manifest.lua")
   if type(shards) ~= "table" or shards.version ~= 1
@@ -627,9 +653,7 @@ local function runGraphicalAssets(adapter, cache, Profile, progress)
   })
   if audioReady then
     local index = loadLua(cache, root .. "/audio/index.lua")
-    audioReady = type(index) == "table"
-      and tonumber(index.cryCount) == Profile.SPECIES_COUNT
-      and tonumber(index.songCount) == Profile.AUDIO_SONG_COUNT
+    audioReady = expandedAudioIndexReady(index, Profile)
   end
   if introReady and namingReady and audioReady then
     progress("rom_assets", 3, 3)
@@ -1005,5 +1029,6 @@ end
 Extractor.importAdapter = importAdapter
 Extractor.rebuildCatalog = rebuildCatalog
 Extractor.markerReady = markerReady
+Extractor.expandedAudioIndexReady = expandedAudioIndexReady
 
 return Extractor
