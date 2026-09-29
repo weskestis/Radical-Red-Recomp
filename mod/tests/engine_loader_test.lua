@@ -1717,6 +1717,91 @@ do
       .. tostring(sparseRoostText))
 end
 
+-- RR's damaging pivot family deliberately shares CFRU's Baton Pass effect id,
+-- but only the party-picker/presentation contract.  The actual switch must
+-- clear Baton Pass state.  Exercise the live v0.3.20 engine so a future host
+-- change cannot silently turn U-turn/Volt Switch/Flip Turn into an instant
+-- data swap or start inheriting stages/Substitute.
+do
+  local AnimSeq = require("src.core.game3.battle.anim_seq")
+  local pivots = {
+    { 0x1BA, "U-turn" },
+    { 0x1BB, "Volt Switch" },
+    { 0x2D8, "Flip Turn" },
+  }
+  for _, pivot in ipairs(pivots) do
+    local moveId, label = pivot[1], pivot[2]
+    local lead = battleMon(1, 60, { moveId })
+    local bench2 = battleMon(4, 60, { 33 })
+    local bench3 = battleMon(7, 60, { 33 })
+    local foe = battleMon(19, 60, { 33 })
+    local pivotState = State.new({
+      wild = true,
+      playerParty = { lead, bench2, bench3 },
+      foeMon = foe,
+      foeParty = { foe },
+      rng = function(lo) return lo or 0 end,
+    })
+    pivotState.interactiveChoices = true
+    pivotState.player.stages.attack = 4
+    pivotState.player.substituteHP = 20
+    pivotState.enemy.mon.maxHp, pivotState.enemy.mon.hp = 10000, 10000
+
+    local pivotAdapter = Adapter.new(pivotState, function() end)
+    local first = {}
+    Engine.resolveMove(
+      pivotState.player, pivotState.enemy, moveId, 1,
+      pivotAdapter, pivotState, first)
+
+    assert(first.pendingChoice
+        and first.pendingChoice.kind == "baton_pass"
+        and first.pendingChoice.rrPivot == true,
+      label .. " did not pause on the live forced-switch party picker")
+    assert(pivotState.player.partyIndex == 1,
+      label .. " switched before the player selected a replacement")
+
+    local resumed = assert(Engine.resumeChoice(pivotState, pivotAdapter, 3),
+      label .. " did not resume after selecting a replacement")
+    assert(pivotState.player.partyIndex == 3,
+      label .. " did not switch to the selected party slot")
+    assert((tonumber(pivotState.player.stages.attack) or 0) == 0
+        and not pivotState.player.substituteHP,
+      label .. " incorrectly inherited Baton Pass stages/Substitute")
+
+    local switchEvent
+    for _, ev in ipairs(resumed._anim and resumed._anim.events or {}) do
+      if ev.kind == "switch" then
+        switchEvent = ev
+        break
+      end
+    end
+    assert(switchEvent
+        and switchEvent.reason == "baton_pass"
+        and switchEvent.from == 1
+        and switchEvent.to == 3,
+      label .. " did not emit the presentation switch event 1 -> 3")
+
+    local steps = AnimSeq.buildSteps(
+      resumed._anim and resumed._anim.events or {},
+      resumed._anim or {})
+    local switchOutAt, goAt, switchInAt
+    for i, step in ipairs(steps) do
+      if step.kind == "switch_out" and not switchOutAt then
+        switchOutAt = i
+      elseif step.kind == "msg"
+          and step.data and step.data.id == "STRINGID_SWITCHINMON"
+          and not goAt then
+        goAt = i
+      elseif step.kind == "switch_in" and not switchInAt then
+        switchInAt = i
+      end
+    end
+    assert(switchOutAt and goAt and switchInAt
+        and switchOutAt < goAt and goAt < switchInAt,
+      label .. " presentation is not switch-out -> Go! -> switch-in")
+  end
+end
+
 local p1 = battleMon(1, 60, { 33, 45, 280 })
 local p2 = battleMon(4, 60, { 33 })
 local bossMon = battleMon(127, 60, { 33, 45 })
