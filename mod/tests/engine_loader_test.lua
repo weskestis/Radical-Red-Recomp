@@ -460,8 +460,8 @@ do
       name .. " still resolves to the host generic IMPACT fallback")
   end
 
-  -- Audit the complete post-FireRed move range. The private ROM table itself
-  -- must contain a valid script pointer for every expanded move row, and every
+  -- Audit the complete 1,004-row RR/CFRU move-animation table. The private
+  -- ROM itself must contain a valid script pointer for every move, and every
   -- decoded dependency must resolve to a host-supported task/callback/tag.
   local tables = assert(exports.extractReport.battleAnims
       and exports.extractReport.battleAnims.tables,
@@ -480,33 +480,33 @@ do
   local songs = assert(Audio._pack and Audio._pack.index
       and Audio._pack.index.songs,
     "RR audio pack is unavailable for the expanded move audit")
-  local expandedRows, referencedSfx = 0, 0
-  for id = 355, 1003 do
+  local animationRows, referencedSfx = 0, 0
+  for id = 0, 1003 do
     local ptr = readU32(movesTable + id * 4)
     assert(ptr >= 0x08000000 and ptr < 0x0A000000,
-      ("expanded move %d has invalid animation pointer 0x%08X"):format(id, ptr))
+      ("RR move %d has invalid animation pointer 0x%08X"):format(id, ptr))
     local script = assert(pack.moves[id],
-      ("expanded move %d has no decoded animation row"):format(id))
+      ("RR move %d has no decoded animation row"):format(id))
     local audit = auditScript(script)
     assert(audit.ops > 0,
-      ("expanded move %d decoded to an empty animation"):format(id))
+      ("RR move %d decoded to an empty animation"):format(id))
     assert(#audit.unresolved == 0,
-      ("expanded move %d has unresolved animation dependencies: %s")
+      ("RR move %d has unresolved animation dependencies: %s")
         :format(id, table.concat(audit.unresolved, ", ")))
     for se in pairs(audit.soundIds) do
       referencedSfx = referencedSfx + 1
       local row = songs[se] or songs[tostring(se)]
       assert(row and row.missing ~= true,
-        ("expanded move %d references uncached SFX/song id %d")
+        ("RR move %d references uncached SFX/song id %d")
           :format(id, se))
     end
-    expandedRows = expandedRows + 1
+    animationRows = animationRows + 1
   end
   romFile:close()
-  assert(expandedRows == 649,
-    ("expanded animation audit covered %d/649 move rows"):format(expandedRows))
+  assert(animationRows == 1004,
+    ("complete animation audit covered %d/1004 move rows"):format(animationRows))
   assert(referencedSfx > 0,
-    "expanded animation audit found no concrete sound-effect references")
+    "complete animation audit found no concrete sound-effect references")
 end
 
 -- Expanded DPE cries must be addressed by live internal species id. The
