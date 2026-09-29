@@ -314,22 +314,69 @@ assert(store.flags[0x1800 + MAP_INDEX] == true)
 -- A cleared den is empty until the player has a Wishing Piece. Merely checking
 -- availability must not spend it; entering the raid flow spends exactly one,
 -- clears the done flag, and advances RR's deterministic raid-number offset.
+-- Feed the offset into the stable number so this proves the reroll itself,
+-- rather than only checking that the variable changed.
+deps.raidRandomNumber = function()
+  return var(Raids.VAR.RAID_NUMBER_OFFSET)
+end
 session.bag[195] = 0
 call(Raids.SPECIAL.AVAILABLE)
 assert(var(0x800D) == 0, "a cleared den was available without a Wishing Piece")
 session.bag[195] = 1
 local beforeOffset = var(Raids.VAR.RAID_NUMBER_OFFSET)
+local beforeStable = Raids._state.stable
 call(Raids.SPECIAL.AVAILABLE)
-assert(var(0x800D) == 1 and session.bag[195] == 1,
-  "checking a cleared den either missed or consumed the Wishing Piece")
+assert(var(0x800D) == 1 and session.bag[195] == 1
+    and var(Raids.VAR.RAID_NUMBER_OFFSET) == beforeOffset
+    and Raids._state.stable == beforeStable,
+  "checking a cleared den consumed or committed the Wishing Piece preview")
+call(Raids.SPECIAL.INTRO, adapters)
+local rerolledOffset = (beforeOffset + 1) % 0x10000
+assert(session.bag[195] == 0
+    and not store.flags[0x1800 + MAP_INDEX]
+    and var(Raids.VAR.RAID_NUMBER_OFFSET) == rerolledOffset
+    and Raids._state.stable == rerolledOffset,
+  "Wishing Piece did not transactionally reroll and reactivate the den")
+
+-- The 16-bit reroll counter wraps exactly, and AVAILABLE still remains a pure
+-- preview at the boundary.
+call(Raids.SPECIAL.SET_DONE)
+assert(store.flags[0x1800 + MAP_INDEX] == true)
+var(Raids.VAR.RAID_NUMBER_OFFSET, 0xFFFF)
+session.bag[195] = 1
+call(Raids.SPECIAL.AVAILABLE)
+assert(var(0x800D) == 1 and session.bag[195] == 1
+    and var(Raids.VAR.RAID_NUMBER_OFFSET) == 0xFFFF,
+  "Wishing Piece availability committed the 16-bit offset wrap early")
 call(Raids.SPECIAL.INTRO, adapters)
 assert(session.bag[195] == 0
     and not store.flags[0x1800 + MAP_INDEX]
-    and var(Raids.VAR.RAID_NUMBER_OFFSET) == (beforeOffset + 1) % 0x10000,
-  "Wishing Piece did not reactivate the den and advance its raid sequence")
+    and var(Raids.VAR.RAID_NUMBER_OFFSET) == 0
+    and Raids._state.stable == 0,
+  "Wishing Piece reroll did not wrap 0xFFFF -> 0")
 
+-- A stale done flag on a map that cannot produce a raid must never advertise
+-- or consume a Wishing Piece. This is the transactional failure case.
 call(Raids.SPECIAL.SET_DONE)
-assert(store.flags[0x1800 + MAP_INDEX] == true)
+local BAD_MAP_INDEX = MAP_INDEX + 1
+session.regionMapSectionId = 0x57 + BAD_MAP_INDEX
+store.flags[0x1800 + BAD_MAP_INDEX] = true
+session.bag[195] = 1
+var(Raids.VAR.RAID_NUMBER_OFFSET, 7)
+call(Raids.SPECIAL.AVAILABLE)
+assert(var(0x800D) == 0 and session.bag[195] == 1
+    and var(Raids.VAR.RAID_NUMBER_OFFSET) == 7
+    and store.flags[0x1800 + BAD_MAP_INDEX] == true,
+  "invalid cleared den advertised or committed a Wishing Piece reroll")
+call(Raids.SPECIAL.INTRO, adapters)
+assert(var(0x800D) == 0 and session.bag[195] == 1
+    and var(Raids.VAR.RAID_NUMBER_OFFSET) == 7
+    and store.flags[0x1800 + BAD_MAP_INDEX] == true,
+  "invalid cleared den consumed a Wishing Piece during INTRO")
+store.flags[0x1800 + BAD_MAP_INDEX] = nil
+session.regionMapSectionId = 0x57 + MAP_INDEX
+session.bag[195] = 0
+
 call(Raids.SPECIAL.ALL_DONE)
 assert(var(0x800D) == 1)
 
@@ -339,6 +386,10 @@ assert(var(0x8000) == 242 and var(0x8001) == 1 and var(0x4000) == 1)
 var(0x8000, 0)
 call(Raids.SPECIAL.CLEAR_DONE)
 assert(not store.flags[0x1800 + MAP_INDEX])
+
+-- Restore the fixed facility fixture after the Wishing Piece tests above used
+-- the live reroll offset as the stable raid number.
+deps.raidRandomNumber = function() return 0 end
 
 -- Battle-facility raids use the Frontier spread pools even if the map's raid
 -- descriptor is absent.  This was the path that previously claimed a den was
