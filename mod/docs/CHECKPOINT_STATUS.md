@@ -102,7 +102,8 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   transactional Wishing Piece den reactivation,
   CFRU Fairy badge,
   guarded field-BGM recovery, pre-battle map-song restoration, live Elite Four
-  VS-intro identity, damaging pivot moves, the full 1,376-row cry table,
+  VS-intro identity, damaging pivot moves, the full 1,376-row cry table with
+  a 1,375/1,375 playable-species identity/sample census,
   CFRU's 526-row song/SFX table, and the full 1,004-move animation pack with
   371 particle rows and 77 animation backgrounds.
 
