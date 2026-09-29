@@ -118,6 +118,14 @@ local function markerReady(cache, Profile, opts)
   end
   local essentialsOk = requireFiles(cache, essentials)
   if not essentialsOk then return false end
+  if expectedSchema >= 19 then
+    local audioIndex = loadLua(cache, root .. "/audio/index.lua")
+    if type(audioIndex) ~= "table"
+        or tonumber(audioIndex.cryCount) ~= Profile.SPECIES_COUNT
+        or tonumber(audioIndex.songCount) ~= Profile.AUDIO_SONG_COUNT then
+      return false
+    end
+  end
   local shards = loadLua(cache, root .. "/scripts/rr_shards/manifest.lua")
   if type(shards) ~= "table" or shards.version ~= 1
       or type(shards.parts) ~= "table" then return false end
@@ -617,6 +625,12 @@ local function runGraphicalAssets(adapter, cache, Profile, progress)
     root .. "/audio/samples.bin",
     root .. "/audio/rr_cry_ids.lua",
   })
+  if audioReady then
+    local index = loadLua(cache, root .. "/audio/index.lua")
+    audioReady = type(index) == "table"
+      and tonumber(index.cryCount) == Profile.SPECIES_COUNT
+      and tonumber(index.songCount) == Profile.AUDIO_SONG_COUNT
+  end
   if introReady and namingReady and audioReady then
     progress("rom_assets", 3, 3)
     return
