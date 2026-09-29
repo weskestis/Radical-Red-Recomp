@@ -43,7 +43,9 @@
 - Bump the private cache schema to 19 with targeted schema-15/16/17/18 upgrades.
   Existing ~216 MiB world caches are preserved while only missing sprite
   coordinates, Fairy badge, expanded cries/SFX, or battle-animation data are
-  rebuilt as needed; schema 18→19 is audio-only.
+  rebuilt as needed; schema 18→19 is audio-only. Schema-19 readiness also
+  validates the actual first/last song and cry rows, sample index, and RR ROM
+  identity so a partially written audio cache cannot pass on counts alone.
 
 ## 0.5.16 — Battle sprite baselines and reliable DexNav controls
 
