@@ -31,18 +31,19 @@
   perform their post-hit switch without inheriting Baton Pass stat stages or
   Substitute state, and never switch on a miss, immunity, zero-hit result, or
   when no legal replacement exists.
-- Replace FireRed's 388-row / 411-species cry assumptions with Radical Red's
-  repointed DPE cry table. The cache now extracts all **1,376 ToneData rows**
-  and installs a complete species→cry map, preventing modern encounters from
-  playing silence, another Pokémon's cry, or malformed-rate audio.
+- Replace FireRed's short audio assumptions with Radical Red/CFRU's live
+  repointed tables. The cache now extracts all **1,376 cry ToneData rows** plus
+  the full **526-row song/SFX table**, preventing modern encounters from playing
+  silence/wrong/malformed cries and restoring sound IDs used by later move
+  animations.
 - Follow CFRU's repointed battle-animation tables and extract all **1,004 move
   scripts**, **371 particle rows**, and **77 animation backgrounds**. This
   restores real visual/SFX scripts for post-Gen-III moves instead of the host's
   generic IMPACT fallback.
-- Bump the private cache schema to 18 with targeted schema-15/16/17 upgrades.
-  Existing ~216 MiB world caches are preserved while only the missing sprite
-  coordinates, Fairy badge sheet, expanded cry pack, and battle-animation pack
-  are rebuilt as needed.
+- Bump the private cache schema to 19 with targeted schema-15/16/17/18 upgrades.
+  Existing ~216 MiB world caches are preserved while only missing sprite
+  coordinates, Fairy badge, expanded cries/SFX, or battle-animation data are
+  rebuilt as needed; schema 18→19 is audio-only.
 
 ## 0.5.16 — Battle sprite baselines and reliable DexNav controls
 
