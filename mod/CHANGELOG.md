@@ -33,9 +33,10 @@
   when no legal replacement exists.
 - Replace FireRed's short audio assumptions with Radical Red/CFRU's live
   repointed tables. The cache now extracts all **1,376 cry ToneData rows** plus
-  the full **526-row song/SFX table**, preventing modern encounters from playing
-  silence/wrong/malformed cries and restoring sound IDs used by later move
-  animations.
+  the full **526-row song/SFX table**. Runtime and exact-ROM gates census all
+  **1,375 playable species**, requiring each internal species id to resolve to
+  its same-numbered RR cry row with valid sample metadata; modern playback
+  sentinels still exercise the host voice path.
 - Follow CFRU's repointed battle-animation tables and extract all **1,004 move
   scripts**, **371 particle rows**, and **77 animation backgrounds**. This
   restores real visual/SFX scripts for post-Gen-III moves instead of the host's
