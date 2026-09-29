@@ -85,7 +85,7 @@ and ROM-free jobs can actually execute.
 | FireRed launcher context preserved for RR save import/export, legacy-stamp normalization, and failed-slot rollback | PENDING — runner unavailable |
 | L-button Skills menu: Auto Run / Time Changer / Infinite Repel / PokéVial | PENDING — runner unavailable |
 | Authored boss teams excluded from ordinary trainer randomization | PENDING — runner unavailable |
-| Wishing Piece reactivates a cleared raid den and advances raid sequence | PENDING — runner unavailable |
+| Wishing Piece transactionally reactivates a cleared den, validates the reroll before spending, and advances/wraps raid sequence | PENDING — runner unavailable |
 | Fairy type badge extracted/rendered from CFRU tile `0x100` | PENDING — runner unavailable |
 | Poké Rider item 363 bypasses Fame Checker and opens Fly-mode travel | PENDING — runner unavailable |
 | Field BGM fanfare recovery / pre-battle map-song return / live Elite Four VS intro identity | PENDING — runner unavailable |
