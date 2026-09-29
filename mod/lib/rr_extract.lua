@@ -86,6 +86,27 @@ local function expandedAudioIndexReady(index, Profile)
   return true
 end
 
+local function expandedBattleAnimPackReady(pack, Profile)
+  if type(pack) ~= "table"
+      or type(pack.moves) ~= "table"
+      or type(pack.labels) ~= "table"
+      or type(pack.tagPals) ~= "table"
+      or type(pack.animBgs) ~= "table" then
+    return false
+  end
+  local lastMove = tonumber(Profile.MOVE_COUNT) - 1
+  if type(pack.moves[0]) ~= "table"
+      or type(pack.moves[lastMove]) ~= "table"
+      or next(pack.labels) == nil then
+    return false
+  end
+  local tagCount, bgCount = 0, 0
+  for _ in pairs(pack.tagPals) do tagCount = tagCount + 1 end
+  for _ in pairs(pack.animBgs) do bgCount = bgCount + 1 end
+  return tagCount >= tonumber(Profile.BATTLE_ANIM_TAG_COUNT)
+    and bgCount >= tonumber(Profile.BATTLE_ANIM_BG_COUNT)
+end
+
 local function cacheUpgradePlan(schema)
   schema = tonumber(schema)
   if schema == 18 then
@@ -162,6 +183,10 @@ local function markerReady(cache, Profile, opts)
   end
   local essentialsOk = requireFiles(cache, essentials)
   if not essentialsOk then return false end
+  if expectedSchema >= 18 then
+    local animPack = loadLua(cache, root .. "/pokemon/battle_anims/pack.lua")
+    if not expandedBattleAnimPackReady(animPack, Profile) then return false end
+  end
   if expectedSchema >= 19 then
     local audioIndex = loadLua(cache, root .. "/audio/index.lua")
     if not expandedAudioIndexReady(audioIndex, Profile) then return false end
@@ -1045,6 +1070,7 @@ Extractor.importAdapter = importAdapter
 Extractor.rebuildCatalog = rebuildCatalog
 Extractor.markerReady = markerReady
 Extractor.expandedAudioIndexReady = expandedAudioIndexReady
+Extractor.expandedBattleAnimPackReady = expandedBattleAnimPackReady
 Extractor.cacheUpgradePlan = cacheUpgradePlan
 
 return Extractor
