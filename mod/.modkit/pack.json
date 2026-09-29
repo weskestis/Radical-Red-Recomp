@@ -1,6 +1,6 @@
 {
   "modkit": "1.0.0",
-  "packed_at": "2026-09-29T04:32:25Z",
+  "packed_at": "2026-09-29T04:34:49Z",
   "id": "radical_red_experience",
   "version": "0.5.19",
   "api": 2,
@@ -13,13 +13,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 23772,
-      "sha256": "178d1cd9cce298b2a3b34e875d348ddfa1eb5dc1a5569f0e403a7e2c2a2fabf4"
+      "bytes": 23933,
+      "sha256": "b6898736dd3ac041849e9ff71f9229742f18de6977f00b8ba2689f56484b0c6f"
     },
     {
       "path": "docs/CHECKPOINT_STATUS.md",
-      "bytes": 10839,
-      "sha256": "56fa24b25b99ca2675a5aa5dc632b80b720bca29aaf4b6ec73cf65b5b1dc623c"
+      "bytes": 10949,
+      "sha256": "b76087f6808d46b09e7763887a625ec0f2dbf987f8ae1e03ee9205f53449a33d"
     },
     {
       "path": "docs/PORTING_MATRIX.md",
@@ -138,13 +138,13 @@
     },
     {
       "path": "reports/VERIFICATION.md",
-      "bytes": 7836,
-      "sha256": "82bcadc039719d34e5b2902745faaedeb81a80fa7992725a01873725b8d7932a"
+      "bytes": 7909,
+      "sha256": "ec3480413dc0c549b31622cf3140d0c886ee39b76e12c3cdea54c7e615342921"
     },
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4695,
-      "sha256": "801ec9e747b1f3b6eabd8ca5ac6014a3ca81325337b3dfa0048a66a4217fe85c"
+      "sha256": "816cfa1f703f0d6148658cf73a9efe8b9a6065f6048f4323e7b6f596b55cd445"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
@@ -163,8 +163,8 @@
     },
     {
       "path": "tests/engine_loader_test.lua",
-      "bytes": 88467,
-      "sha256": "4e6c915739f997858f7d9ae313e331ee4292b01f8c2cdc9512c7923b8b963b01"
+      "bytes": 88438,
+      "sha256": "837879b3fe046435a51d6f55b8c9dcefc14e09df0e652018123a165e66ec25f6"
     },
     {
       "path": "tests/main_overlay_test.lua",
