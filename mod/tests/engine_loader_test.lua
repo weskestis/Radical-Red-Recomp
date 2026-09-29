@@ -527,23 +527,37 @@ do
     end
     return nil
   end
+
+  local mapped = 0
+  local distinctSamples = {}
+  for species = 1, 1375 do
+    local cryIndex = Audio._pack.index.cryIds[species]
+    assert(cryIndex == species,
+      ("species %d cry mapped to row %s instead of its RR species row")
+        :format(species, tostring(cryIndex)))
+    local cry = Audio._pack.index.cries[species]
+    assert(type(cry) == "table" and cry.sampleId ~= nil,
+      ("species %d has no extracted RR cry sample"):format(species))
+    local meta = Audio._pack.samples[cry.sampleId]
+      or Audio._pack.samples[tostring(cry.sampleId)]
+    assert(type(meta) == "table"
+        and (tonumber(meta.freq) or 0) > 0
+        and (tonumber(meta.size) or 0) > 0,
+      ("species %d cry sample metadata is corrupt"):format(species))
+    distinctSamples[tostring(cry.sampleId)] = true
+    mapped = mapped + 1
+  end
+  assert(mapped == 1375,
+    ("complete RR cry census covered %d/1375 species"):format(mapped))
+  assert(next(distinctSamples) ~= nil,
+    "complete RR cry census resolved no samples")
+
+  -- Representative modern species still exercise the actual host voice path.
   for _, want in ipairs({ "TURTWIG", "LUCARIO", "TINKATINK" }) do
     local species = assert(findSpecies(want),
       "exact RR species table did not contain " .. want)
     assert(species > 411,
       want .. " unexpectedly landed inside FireRed's old cry-map range")
-    local cryIndex = Audio._pack.index.cryIds[species]
-    assert(cryIndex == species,
-      ("%s cry mapped to row %s instead of its RR species row %d")
-        :format(want, tostring(cryIndex), species))
-    local cry = Audio._pack.index.cries[cryIndex]
-    assert(cry and cry.sampleId ~= nil,
-      want .. " has no extracted RR cry sample")
-    local meta = Audio._pack.samples[cry.sampleId]
-      or Audio._pack.samples[tostring(cry.sampleId)]
-    assert(meta and (tonumber(meta.freq) or 0) > 0
-        and (tonumber(meta.size) or 0) > 0,
-      want .. " cry sample metadata is corrupt")
     assert(Audio.playCry(species) == true,
       want .. " cry would not start")
     assert(Audio._crySlot and Audio._crySlot.info
