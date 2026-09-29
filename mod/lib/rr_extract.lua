@@ -819,25 +819,27 @@ function Extractor.ensure(mod, Profile, opts)
       progress("expanded_tables", step, total)
       local picCoords, menuInfo
 
-      local upgradeRom = assert(StreamRom.open(adapter, "firered"))
-      if needsPicCoords then
-        picCoords = writePicCoords(upgradeRom, mod.cache, Profile)
-        step = step + 1
-        progress("expanded_tables", step, total)
-      end
-      if needsMenuInfo then
-        menuInfo = Visuals.rebuildMenuInfo(upgradeRom, mod.cache, Profile)
-        step = step + 1
-        progress("expanded_tables", step, total)
-      end
       local battleAnims
-      if needsBattleAnims then
-        battleAnims = extractExpandedBattleAnims(
-          upgradeRom, mod.cache, Profile)
-        step = step + 1
-        progress("expanded_tables", step, total)
+      if needsPicCoords or needsMenuInfo or needsBattleAnims then
+        local upgradeRom = assert(StreamRom.open(adapter, "firered"))
+        if needsPicCoords then
+          picCoords = writePicCoords(upgradeRom, mod.cache, Profile)
+          step = step + 1
+          progress("expanded_tables", step, total)
+        end
+        if needsMenuInfo then
+          menuInfo = Visuals.rebuildMenuInfo(upgradeRom, mod.cache, Profile)
+          step = step + 1
+          progress("expanded_tables", step, total)
+        end
+        if needsBattleAnims then
+          battleAnims = extractExpandedBattleAnims(
+            upgradeRom, mod.cache, Profile)
+          step = step + 1
+          progress("expanded_tables", step, total)
+        end
+        upgradeRom:clearCache()
       end
-      upgradeRom:clearCache()
 
       -- Audio extraction needs the raw WaveData payloads. Read the validated
       -- 32 MiB ROM once, rebuild only /audio, then release it immediately.
