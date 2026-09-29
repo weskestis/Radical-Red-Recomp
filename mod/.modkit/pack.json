@@ -1,6 +1,6 @@
 {
   "modkit": "1.0.0",
-  "packed_at": "2026-09-29T01:33:46Z",
+  "packed_at": "2026-09-29T01:36:56Z",
   "id": "radical_red_experience",
   "version": "0.5.19",
   "api": 2,
@@ -18,8 +18,8 @@
     },
     {
       "path": "docs/CHECKPOINT_STATUS.md",
-      "bytes": 9985,
-      "sha256": "33ce021f8cd1b2b5f8a6b299d7268e31c978a6876f97b1d238bce85b5083a802"
+      "bytes": 10016,
+      "sha256": "9f7af2a8c408b13f129d3a726f124e13bca379cbbf102603afab10b3977572e1"
     },
     {
       "path": "docs/PORTING_MATRIX.md",
@@ -68,8 +68,8 @@
     },
     {
       "path": "lib/rr_qol.lua",
-      "bytes": 58620,
-      "sha256": "e92126832ed4204605a15ba723f981710056befecae86fb55552f4397995b822"
+      "bytes": 58950,
+      "sha256": "8af91ed22d42c67574078fd7c19ac26e9549c851add1ced2dfaf797590806891"
     },
     {
       "path": "lib/rr_raids.lua",
@@ -88,8 +88,8 @@
     },
     {
       "path": "lib/rr_runtime.lua",
-      "bytes": 35993,
-      "sha256": "1b9fb857104ecc2bc1eaab10c1cc6c579de61b7c6eda1f75645067f47e71ef94"
+      "bytes": 36293,
+      "sha256": "fd54b906eb54a80dc5f7e5876c03a2c9b7504af7406bd3493be2b97bcfc8e0c7"
     },
     {
       "path": "lib/rr_story.lua",
@@ -138,13 +138,13 @@
     },
     {
       "path": "reports/VERIFICATION.md",
-      "bytes": 7469,
-      "sha256": "ce7b11454b0df67dc478b432291a03d7ba8fbc3bb1532b66c15d96547ef29b38"
+      "bytes": 7621,
+      "sha256": "64f2edec00c5498b18ea020e34d45b368c4649de5330b0342328adc61e988bf3"
     },
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4695,
-      "sha256": "b0ecbf9242fd3141c987fea738ea49df06fec3d588125dd2eecdf9dd3c475e70"
+      "sha256": "b63ec717b0b59aacd45bbcf75fefef409431c69313b388cbd3b88fedbe93e0c6"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
@@ -198,8 +198,8 @@
     },
     {
       "path": "tests/rr_qol_test.lua",
-      "bytes": 22886,
-      "sha256": "b48ac81a56fbe7ee21fd54adf79924adfc43cdaf9e30edcebbbf8bc3238a7d03"
+      "bytes": 23518,
+      "sha256": "c8da8f5465819d96fad185cc1ee8f91a002e6e8407ac3b4e82e41d21d3b46042"
     },
     {
       "path": "tests/rr_raids_test.lua",
@@ -218,8 +218,8 @@
     },
     {
       "path": "tests/rr_save_transfer_test.lua",
-      "bytes": 7927,
-      "sha256": "f7c4015d52d15247cb9e3a1853208e2b9e165a7789ef1c1bb85711fbd8c4bdc5"
+      "bytes": 8382,
+      "sha256": "afdbca35187e1c458a483282e50b9e6bff9be710aada910d4a7848c013ec7b62"
     },
     {
       "path": "tests/rr_story_test.lua",
