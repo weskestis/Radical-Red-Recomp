@@ -62,6 +62,7 @@ function SaveSerializer.decode(bytes)
   return {
     version = version, generation = 3, engine = "game3",
     party = {}, meta = {}, name = "RED",
+    registeredItem = bytes == "ZERO_REGISTERED" and 0 or nil,
     __writeFail = bytes == "WRITE_FAIL" or nil,
     __readbackFail = bytes == "READBACK_FAIL" or nil,
   }
@@ -149,14 +150,22 @@ assert(imp.tab == "firered" and GameVersion.current == "firered"
     and GameVersion.setCalls == 0,
   "legacy RR import switched launcher game context")
 
+-- ITEM_NONE can be serialized as numeric zero by older/original save paths.
+-- Normalize it during import so field SELECT does not treat item 0 as a real
+-- registered key item.
+imp:_importSave("firered", "ZERO_REGISTERED")
+assert(imp.activeSlot.firered == "slot5" and written.slot5
+    and written.slot5.registeredItem == nil,
+  "RR import preserved registeredItem=0 instead of ITEM_NONE")
+
 -- A failed write/readback must remove the newly allocated private slot rather
 -- than leaving a broken save entry behind.
 imp:_importSave("firered", "WRITE_FAIL")
-assert(deleted[#deleted] == "slot5" and written.slot5 == nil
+assert(deleted[#deleted] == "slot6" and written.slot6 == nil
     and imp.saveNotice.firered and imp.saveNotice.firered.ok == false,
   "failed RR save write did not roll back its private slot")
 imp:_importSave("firered", "READBACK_FAIL")
-assert(deleted[#deleted] == "slot6" and written.slot6 == nil
+assert(deleted[#deleted] == "slot7" and written.slot7 == nil
     and imp.saveNotice.firered and imp.saveNotice.firered.ok == false,
   "failed RR save readback did not roll back its private slot")
 
