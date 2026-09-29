@@ -1,6 +1,6 @@
 {
   "modkit": "1.0.0",
-  "packed_at": "2026-09-28T21:05:00Z",
+  "packed_at": "2026-09-29T00:20:00Z",
   "id": "radical_red_experience",
   "version": "0.5.19",
   "api": 2,
@@ -144,7 +144,7 @@
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4695,
-      "sha256": "cf034639a4be237325fcd1718430da9e503b45544d4d8d28581b5ace7180dee3"
+      "sha256": "f40e7af90e4dd42b07c915f6c6212b2726458788bb401fc2b067adbc9820af47"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
@@ -163,8 +163,8 @@
     },
     {
       "path": "tests/engine_loader_test.lua",
-      "bytes": 76794,
-      "sha256": "49f204cb4b2599cf92fc3a390fbb501ed1c200aec19f5a8a4e6813b896ce0ba2"
+      "bytes": 79609,
+      "sha256": "a65d0dd77650df16e9e6d5f3581e0b5c169e5daa472cfd164c0f2e516b85e0a5"
     },
     {
       "path": "tests/main_overlay_test.lua",
