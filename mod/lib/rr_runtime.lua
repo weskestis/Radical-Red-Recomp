@@ -659,6 +659,11 @@ local function installSaveTransferBridge(Profile)
       return false, "That .lua file is not a Radical Red / FireRed save."
     end
 
+    -- Older/raw serialized saves can carry ITEM_NONE as numeric zero. Lua treats
+    -- zero as truthy, so leaving it intact makes the field SELECT handler try
+    -- to use item 0 and blocks RR's DexNav SELECT fallback.
+    if tonumber(save.registeredItem) == 0 then save.registeredItem = nil end
+
     save.meta = type(save.meta) == "table" and save.meta or {}
     save.meta.cartId = CART_ID
     save.meta.cartHash = Profile.SHA1
