@@ -70,6 +70,9 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
 - Console codes: exact matching and persistent flags for `SO2Toxic`, `DexAll`,
   `Woyaopp`, `TeamPreview`, and `EZCatch`; DexNav disclosure, opponent preview,
   guaranteed catch, early-item, and Viridian level-cap paths are exercised.
+- Poké Rider: RR item 363 bypasses Fame Checker in Bag-deferred and direct
+  registered-item use, opens the visited-location Fly map, and releases the
+  field lock if the region map cannot open or is canceled.
 - DexNav: story unlock and DexAll disclosure, Register/Scan/Cancel, saved
   registration and search levels, chain lifecycle, latched R/SELECT controls,
   key-item SELECT preservation, serialized ITEM_NONE=0 repair, fishing rods,
