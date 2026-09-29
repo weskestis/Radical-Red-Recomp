@@ -17,7 +17,7 @@ local Profile = {
   -- Bump whenever the private-ROM cache layout or a decoded RR structure
   -- changes.  A mismatched marker makes the mod rebuild from the player's
   -- validated import instead of ever mixing old/vanilla cache data.
-  CACHE_SCHEMA = 18,
+  CACHE_SCHEMA = 19,
 
   SPECIES_COUNT = 1376,
   MOVE_COUNT = 1004,
@@ -34,6 +34,9 @@ local Profile = {
   -- CFRU keeps the GBA animation bytecode format but expands the tables.
   BATTLE_ANIM_TAG_COUNT = 371,
   BATTLE_ANIM_BG_COUNT = 77,
+  -- CFRU song constants occupy 0..525; modern move SFX reach beyond
+  -- FireRed's original 347-row table.
+  AUDIO_SONG_COUNT = 526,
 
   RR_WILD_BASE_HEADER_COUNT = 142,
   RR_WILD_DAY_HEADER_COUNT = 83,
@@ -122,6 +125,9 @@ Profile.OFFSET = {
   -- site. Resolve the pointer from the player's exact ROM; never bake the
   -- relocated table address from another build.
   cryTablePointerSlot = 0x00072114,
+
+  -- CFRU's m4a.h resolves gSongTable through *((u32*)0x081DD11C).
+  songTablePointerSlot = 0x001DD11C,
 
   -- CFRU repoints the move-animation and particle/background tables through
   -- these original FireRed references. Resolve every target from the exact
