@@ -1,6 +1,6 @@
 {
   "modkit": "1.0.0",
-  "packed_at": "2026-09-29T01:40:51Z",
+  "packed_at": "2026-09-29T01:47:59Z",
   "id": "radical_red_experience",
   "version": "0.5.19",
   "api": 2,
@@ -13,13 +13,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 23336,
-      "sha256": "af96a8b0342b09a1c496006d95388ae524f233dd1eda98f920d69e9c36fe05fa"
+      "bytes": 23662,
+      "sha256": "0f199719ce9ddcdfa30f3879a28f38dd99633c086d3a57b5357ead7f82ced63c"
     },
     {
       "path": "docs/CHECKPOINT_STATUS.md",
-      "bytes": 10425,
-      "sha256": "b05af14de7360c0bc481c5a5b58c56e2d936f57012e4ee6260e371058e2e0f6e"
+      "bytes": 10778,
+      "sha256": "31ad670d0782930f20f381e7a82e68e29caaf6ba9c0166e6a20d1aee49d84c15"
     },
     {
       "path": "docs/PORTING_MATRIX.md",
@@ -38,8 +38,8 @@
     },
     {
       "path": "lib/rr_extract.lua",
-      "bytes": 39679,
-      "sha256": "3f68c1936fe7df95c1dc4cc87c8477315cec5100b24c0b1dc5160eb31307dbfb"
+      "bytes": 42180,
+      "sha256": "7efa82824fdecadee37f1e67c954717c0afe637b33d33a49ff65bf9ac04e5ef0"
     },
     {
       "path": "lib/rr_facilities.lua",
@@ -138,13 +138,13 @@
     },
     {
       "path": "reports/VERIFICATION.md",
-      "bytes": 7712,
-      "sha256": "868a728cf675d861e3231f5c79c440b71903a6966db8f1c5af3be827b89c8c54"
+      "bytes": 7792,
+      "sha256": "3db2f19f68d0c3a76439b63450d0dc1173e761b2e41b923b84252b2a7671b9f9"
     },
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4695,
-      "sha256": "a259b217e00c1e289837bb622103c40a330e39b2f784795548a415506603f43c"
+      "sha256": "8a32ce7c5dd300b5f1bb6189498a230814c4e44b02b3d18e6f783e8d908f623f"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
@@ -228,8 +228,8 @@
     },
     {
       "path": "tests/stream_rom_compat_test.lua",
-      "bytes": 2662,
-      "sha256": "84afbd83ab078c99dd3f50fe131664ee9097e9dade712a53cb78389cd29ca4e9"
+      "bytes": 6653,
+      "sha256": "8d8e7deeec587624c70331f0f9a4ee7c54d74c443278d5a0abc1b8bc71b1e178"
     },
     {
       "path": "tests/vanilla_off_test.lua",
