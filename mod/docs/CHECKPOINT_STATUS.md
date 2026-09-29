@@ -65,6 +65,9 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   menu bounce.
 - Seviian Ursaring: species `0x04FF` is verified as the intentional
   Ghost/Fighting form; its ROM sprite is preserved unchanged.
+- Fairy UI: the 128×144 RR menu-info sheet preserves tile `0x100`, and the
+  live Summary/TM-style and Pokédex badge renderers crop Fairy from
+  `(0,128,32,12)` instead of falling back to NORMAL.
 - Running shoes: flag `0x82F` is present before the first playable step and is
   repaired for existing saves on load/map entry.
 - Console codes: exact matching and persistent flags for `SO2Toxic`, `DexAll`,
