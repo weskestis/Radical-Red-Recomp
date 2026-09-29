@@ -83,7 +83,7 @@ and ROM-free jobs can actually execute.
 |---|---|
 | Early RR save scope binding and schema-15/16/17 targeted upgrades | PENDING — runner unavailable |
 | FireRed launcher context preserved for RR save import/export, legacy-stamp normalization, and failed-slot rollback | PENDING — runner unavailable |
-| L-button Skills menu: Auto Run / Time Changer / Infinite Repel / PokéVial | PENDING — runner unavailable |
+| Physical left-shoulder Skills path plus Auto Run / Time Changer / Infinite Repel / PokéVial | PENDING — runner unavailable |
 | Authored boss teams excluded from ordinary trainer randomization | PENDING — runner unavailable |
 | Wishing Piece transactionally reactivates a cleared den, validates the reroll before spending, and advances/wraps raid sequence | PENDING — runner unavailable |
 | Fairy type badge extracted/rendered from CFRU tile `0x100` | PENDING — runner unavailable |
