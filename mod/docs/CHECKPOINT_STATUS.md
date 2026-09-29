@@ -86,7 +86,8 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   modern and readBytes-only Android fixtures completing under the limit.
 - Launcher/engine source modifications: none.
 - 0.5.19 additions: FireRed-context RR save transfer with legacy-stamp
-  normalization and failed-import rollback, four-skill L menu,
+  normalization and failed-import rollback, four-skill L menu with pinned
+  physical-left-shoulder input coverage,
   authored-boss preservation, transactional Wishing Piece den reactivation,
   CFRU Fairy badge,
   guarded field-BGM recovery, pre-battle map-song restoration, live Elite Four
