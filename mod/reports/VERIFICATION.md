@@ -88,6 +88,7 @@ and ROM-free jobs can actually execute.
 | Wishing Piece reactivates a cleared raid den and advances raid sequence | PENDING — runner unavailable |
 | Fairy type badge extracted/rendered from CFRU tile `0x100` | PENDING — runner unavailable |
 | Poké Rider item 363 bypasses Fame Checker and opens Fly-mode travel | PENDING — runner unavailable |
+| Field BGM fanfare recovery / pre-battle map-song return / live Elite Four VS intro identity | PENDING — runner unavailable |
 | U-turn / Volt Switch / Flip Turn perform normal post-hit pivot switching | PENDING — runner unavailable |
 | Full 1,376-row Radical Red cry table and modern-species cry mapping | PENDING — runner unavailable |
 | CFRU/RR 526-row song/SFX table and expanded-move sound references | PENDING — runner unavailable |
