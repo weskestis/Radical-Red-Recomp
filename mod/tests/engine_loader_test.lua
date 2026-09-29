@@ -397,10 +397,23 @@ do
         out.unresolved[#out.unresolved + 1] =
           "createsprite:" .. tostring(op.tag or "<no tag>")
       end
+      if (op.op == "loadspritegfx" or op.op == "unloadspritegfx")
+          and op.tag and not (pack.tags and pack.tags[op.tag]) then
+        out.unresolved[#out.unresolved + 1] = "missing tag:" .. tostring(op.tag)
+      elseif op.op == "createsprite" and op.tag and not op.noGfx
+          and not (pack.tags and pack.tags[op.tag]) then
+        out.unresolved[#out.unresolved + 1] =
+          "createsprite missing tag:" .. tostring(op.tag)
+      end
       for _, key in ipairs({ "label", "label1", "label2" }) do
         local label = op[key]
-        if label ~= nil and pack.labels[label] then
-          auditScript(pack.labels[label], seen, out)
+        if label ~= nil then
+          if pack.labels[label] then
+            auditScript(pack.labels[label], seen, out)
+          else
+            out.unresolved[#out.unresolved + 1] =
+              tostring(op.op) .. " missing " .. key .. ":" .. tostring(label)
+          end
         end
       end
     end
@@ -444,6 +457,54 @@ do
     assert(not generic,
       name .. " still resolves to the host generic IMPACT fallback")
   end
+
+  -- Audit the complete post-FireRed move range. The private ROM table itself
+  -- must contain a valid script pointer for every expanded move row, and every
+  -- decoded dependency must resolve to a host-supported task/callback/tag.
+  local tables = assert(exports.extractReport.battleAnims
+      and exports.extractReport.battleAnims.tables,
+    "RR expanded animation table report is missing")
+  local movesTable = assert(tonumber(tables.movesTable),
+    "RR move-animation table offset is missing")
+  local romFile = assert(io.open(rrPath, "rb"))
+  local function readU32(offset)
+    assert(romFile:seek("set", offset))
+    local raw = assert(romFile:read(4))
+    assert(#raw == 4)
+    local b1, b2, b3, b4 = raw:byte(1, 4)
+    return b1 + b2 * 0x100 + b3 * 0x10000 + b4 * 0x1000000
+  end
+  local Audio = require("src.core.game3.audio")
+  local songs = assert(Audio._pack and Audio._pack.index
+      and Audio._pack.index.songs,
+    "RR audio pack is unavailable for the expanded move audit")
+  local expandedRows, referencedSfx = 0, 0
+  for id = 355, 1003 do
+    local ptr = readU32(movesTable + id * 4)
+    assert(ptr >= 0x08000000 and ptr < 0x0A000000,
+      ("expanded move %d has invalid animation pointer 0x%08X"):format(id, ptr))
+    local script = assert(pack.moves[id],
+      ("expanded move %d has no decoded animation row"):format(id))
+    local audit = auditScript(script)
+    assert(audit.ops > 0,
+      ("expanded move %d decoded to an empty animation"):format(id))
+    assert(#audit.unresolved == 0,
+      ("expanded move %d has unresolved animation dependencies: %s")
+        :format(id, table.concat(audit.unresolved, ", ")))
+    for se in pairs(audit.soundIds) do
+      referencedSfx = referencedSfx + 1
+      local row = songs[se] or songs[tostring(se)]
+      assert(row and row.missing ~= true,
+        ("expanded move %d references uncached SFX/song id %d")
+          :format(id, se))
+    end
+    expandedRows = expandedRows + 1
+  end
+  romFile:close()
+  assert(expandedRows == 649,
+    ("expanded animation audit covered %d/649 move rows"):format(expandedRows))
+  assert(referencedSfx > 0,
+    "expanded animation audit found no concrete sound-effect references")
 end
 
 -- Expanded DPE cries must be addressed by live internal species id. The
