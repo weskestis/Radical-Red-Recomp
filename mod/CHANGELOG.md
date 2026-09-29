@@ -38,9 +38,11 @@
   its same-numbered RR cry row with valid sample metadata; modern playback
   sentinels still exercise the host voice path.
 - Follow CFRU's repointed battle-animation tables and extract all **1,004 move
-  scripts**, **371 particle rows**, and **77 animation backgrounds**. This
-  restores real visual/SFX scripts for post-Gen-III moves instead of the host's
-  generic IMPACT fallback.
+  scripts**, **371 particle rows**, and **77 animation backgrounds**. The
+  exact-ROM gate audits every move pointer and decoded dependency graph and
+  requires every referenced SFX/song row to exist in the expanded audio cache;
+  reported post-Gen-III moves must still resolve to real visuals instead of the
+  host's generic IMPACT fallback.
 - Bump the private cache schema to 19 with targeted schema-15/16/17/18 upgrades.
   Existing ~216 MiB world caches are preserved while only missing sprite
   coordinates, Fairy badge, expanded cries/SFX, or battle-animation data are
