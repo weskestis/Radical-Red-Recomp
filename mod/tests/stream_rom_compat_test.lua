@@ -69,4 +69,55 @@ assert(StreamRom.readBinary(getOnly, page - 9, 27)
     == source:sub(page - 8, page + 18),
   "get-only ROM reader compatibility failed")
 
-print("PASS stream_rom_compat_test: strings, byte arrays, get-only, Android tilesets")
+-- Schema 19 must validate the expanded audio tables themselves, not trust
+-- headline counts left behind by a partial/stale cache write.
+local Extractor = assert(loadfile(
+  "mods/radical_red_experience/lib/rr_extract.lua"))()
+local AudioProfile = {
+  SPECIES_COUNT = 1376,
+  AUDIO_SONG_COUNT = 526,
+  SHA1 = "rr-v4.1-fixture",
+}
+local fullAudio = {
+  cryCount = 1376,
+  songCount = 526,
+  romSha1 = AudioProfile.SHA1,
+  songs = { [0] = {}, [525] = {} },
+  cries = { [0] = {}, [1375] = {} },
+  samples = { [1] = { id = 1 } },
+}
+assert(Extractor.expandedAudioIndexReady(fullAudio, AudioProfile),
+  "complete schema-19 audio index was rejected")
+
+local function copyIndex()
+  local out = {}
+  for k, v in pairs(fullAudio) do out[k] = v end
+  return out
+end
+
+local bad = copyIndex()
+bad.songs = {}
+assert(not Extractor.expandedAudioIndexReady(bad, AudioProfile),
+  "schema-19 audio accepted correct counts with an empty song table")
+
+bad = copyIndex()
+bad.songs = { [0] = {} }
+assert(not Extractor.expandedAudioIndexReady(bad, AudioProfile),
+  "schema-19 audio accepted a truncated song table")
+
+bad = copyIndex()
+bad.cries = { [0] = {} }
+assert(not Extractor.expandedAudioIndexReady(bad, AudioProfile),
+  "schema-19 audio accepted a truncated cry table")
+
+bad = copyIndex()
+bad.samples = {}
+assert(not Extractor.expandedAudioIndexReady(bad, AudioProfile),
+  "schema-19 audio accepted an empty sample index")
+
+bad = copyIndex()
+bad.romSha1 = "firered"
+assert(not Extractor.expandedAudioIndexReady(bad, AudioProfile),
+  "schema-19 audio accepted an index from the wrong ROM")
+
+print("PASS stream_rom_compat_test: strings, byte arrays, get-only, Android tilesets, schema19 audio")
