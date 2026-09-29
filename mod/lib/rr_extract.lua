@@ -86,6 +86,20 @@ local function expandedAudioIndexReady(index, Profile)
   return true
 end
 
+local function cacheUpgradePlan(schema)
+  schema = tonumber(schema)
+  if schema == 18 then
+    return { picCoords = false, menuInfo = false, battleAnims = false, audio = true }
+  elseif schema == 17 then
+    return { picCoords = false, menuInfo = false, battleAnims = true, audio = true }
+  elseif schema == 16 then
+    return { picCoords = false, menuInfo = true, battleAnims = true, audio = true }
+  elseif schema == 15 then
+    return { picCoords = true, menuInfo = true, battleAnims = true, audio = true }
+  end
+  return nil
+end
+
 local function markerReady(cache, Profile, opts)
   opts = opts or {}
   local root = Profile.extractRoot()
@@ -826,24 +840,25 @@ function Extractor.ensure(mod, Profile, opts)
   -- added expanded cries/animations but still used FireRed's 347-row song
   -- table. Schema 19 rebuilds only the pieces each older cache lacks.
   if Profile.CACHE_SCHEMA == 19 then
-    local fromSchema, needsPicCoords, needsMenuInfo, needsBattleAnims
+    local fromSchema
     if markerReady(mod.cache, Profile, { schema = 18 }) then
-      fromSchema, needsPicCoords, needsMenuInfo, needsBattleAnims =
-        18, false, false, false
+      fromSchema = 18
     elseif markerReady(mod.cache, Profile, { schema = 17 }) then
-      fromSchema, needsPicCoords, needsMenuInfo, needsBattleAnims =
-        17, false, false, true
+      fromSchema = 17
     elseif markerReady(mod.cache, Profile, { schema = 16 }) then
-      fromSchema, needsPicCoords, needsMenuInfo, needsBattleAnims =
-        16, false, true, true
+      fromSchema = 16
     elseif markerReady(mod.cache, Profile, {
         schema = 15, requirePicCoords = false,
       }) then
-      fromSchema, needsPicCoords, needsMenuInfo, needsBattleAnims =
-        15, true, true, true
+      fromSchema = 15
     end
 
     if fromSchema then
+      local upgradePlan = assert(cacheUpgradePlan(fromSchema),
+        "Radical Red cache upgrade plan is missing for schema " .. tostring(fromSchema))
+      local needsPicCoords = upgradePlan.picCoords
+      local needsMenuInfo = upgradePlan.menuInfo
+      local needsBattleAnims = upgradePlan.battleAnims
       local Visuals = assert(opts.visuals,
         "Radical Red targeted visual cache upgrader was not loaded")
       if needsMenuInfo then
@@ -1030,5 +1045,6 @@ Extractor.importAdapter = importAdapter
 Extractor.rebuildCatalog = rebuildCatalog
 Extractor.markerReady = markerReady
 Extractor.expandedAudioIndexReady = expandedAudioIndexReady
+Extractor.cacheUpgradePlan = cacheUpgradePlan
 
 return Extractor
