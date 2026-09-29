@@ -87,7 +87,7 @@ and ROM-free jobs can actually execute.
 | DexNav R/SELECT field shortcuts repair serialized ITEM_NONE=0 while preserving real registered key items | PENDING — runner unavailable |
 | Complete extracted trainer-table census preserves every authored boss/rival while ordinary trainers still randomize | PENDING — runner unavailable |
 | Wishing Piece transactionally reactivates a cleared den, validates the reroll before spending, and advances/wraps raid sequence | PENDING — runner unavailable |
-| Fairy type badge extracted/rendered from CFRU tile `0x100` | PENDING — runner unavailable |
+| Fairy type badge extracted from CFRU tile `0x100` and rendered through Summary/TM-style and Pokédex surfaces | PENDING — runner unavailable |
 | Poké Rider item 363 bypasses Fame Checker in Bag/direct use and releases the field lock on map-open failure | PENDING — runner unavailable |
 | Field BGM fanfare recovery / pre-battle map-song return / live Elite Four VS intro identity | PENDING — runner unavailable |
 | U-turn / Volt Switch / Flip Turn perform normal post-hit pivot switching | PENDING — runner unavailable |
