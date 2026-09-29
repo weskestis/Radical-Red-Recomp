@@ -558,10 +558,24 @@ assert(#startedBattles == 4 and startedBattles[4].encounter.species == 25,
 startedBattles[4].done("run")
 pressed = {}
 wrappers["core.update"](function() return "updated" end, fieldGame, 1 / 60)
+
+-- Older/original serialized saves can preserve ITEM_NONE as numeric zero.
+-- Treat it as no registered key item and repair the live session before the
+-- stock SELECT handler sees a truthy 0.
+session.registeredItem = 0
+pressed = { select = true }
+wrappers["core.update"](function() return "updated" end, fieldGame, 1 / 60)
+assert(session.registeredItem == nil
+    and #startedBattles == 5 and startedBattles[5].encounter.species == 25,
+  "registeredItem=0 blocked or collided with the DexNav SELECT fallback")
+startedBattles[5].done("run")
+pressed = {}
+wrappers["core.update"](function() return "updated" end, fieldGame, 1 / 60)
+
 session.registeredItem = 262
 pressed = { select = true }
 wrappers["core.update"](function() return "updated" end, fieldGame, 1 / 60)
-assert(#startedBattles == 4,
+assert(#startedBattles == 5,
   "DexNav stole SELECT from FireRed's registered key item")
 session.registeredItem = nil
 
