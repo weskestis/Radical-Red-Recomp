@@ -1505,8 +1505,11 @@ do
     CLAIR = false, BRENDAN = false, MAY = false,
   }
   local protectedBosses = 0
-  for id = 0, 1200 do
-    local row = Trainers.get(id)
+  local trainerPack = assert(Trainers.pack(), "exact RR trainer pack is missing")
+  for rawId in pairs(assert(trainerPack.trainers,
+      "exact RR trainer pack has no trainer table")) do
+    local id = tonumber(rawId)
+    local row = id and Trainers.get(id) or nil
     if row and RRRandomizer.isFixedBoss(tonumber(row.class) or 1, id) then
       protectedBosses = protectedBosses + 1
       local name = tostring(row.name or row.trainerName or ""):upper()
