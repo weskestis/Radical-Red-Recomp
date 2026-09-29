@@ -6,6 +6,7 @@ local cartSlots = {
 local activeCartSlot = "slot1"
 local created = 1
 local written = {}
+local deleted = {}
 local options = { modsByVersion = { firered = { radical_red_experience = true } } }
 
 local SaveData = {}
@@ -31,14 +32,19 @@ function SaveData.setActiveCartSlot(id, slot)
 end
 function SaveData.writeCartSlot(id, slot, save)
   assert(id == "radical_red_4_1")
+  if save and save.__writeFail then return false, "forced write failure" end
   written[slot] = save
   return true
 end
 function SaveData.readCartSlotSource(id, slot)
-  return written[slot] and "return {}" or (slot == "slot1" and "return {}" or nil)
+  local row = written[slot]
+  if row and row.__readbackFail then return nil end
+  return row and "return {}" or (slot == "slot1" and "return {}" or nil)
 end
 function SaveData.deleteCartSlot(id, slot)
   assert(id == "radical_red_4_1")
+  deleted[#deleted + 1] = slot
+  written[slot] = nil
   return true
 end
 function SaveData.renameCartSlot(id, slot, name)
@@ -51,15 +57,24 @@ package.loaded["src.core.SaveData"] = SaveData
 local SaveSerializer = {}
 function SaveSerializer.decode(bytes)
   if bytes == "BAD" then return nil, "bad" end
+  local version = bytes == "LEGACY" and "radical_red_runtime"
+    or bytes == "WRONG" and "emerald" or "firered"
   return {
-    version = "firered", generation = 3, engine = "game3",
+    version = version, generation = 3, engine = "game3",
     party = {}, meta = {}, name = "RED",
+    __writeFail = bytes == "WRITE_FAIL" or nil,
+    __readbackFail = bytes == "READBACK_FAIL" or nil,
   }
 end
 package.loaded["src.core.SaveSerializer"] = SaveSerializer
 
-local GameVersion = { current = "firered" }
+local GameVersion = { current = "firered", setCalls = 0 }
 function GameVersion.get() return GameVersion.current end
+function GameVersion.set(id)
+  GameVersion.setCalls = GameVersion.setCalls + 1
+  GameVersion.current = id
+  error("RR save bridge must not switch the launcher game version")
+end
 package.loaded["src.core.GameVersion"] = GameVersion
 
 local exportArgs
@@ -77,6 +92,7 @@ local RomImporter = {}
 function RomImporter.new(_, opts)
   return setmetatable({
     onEditSave = opts and opts.onEditSave,
+    tab = "firered",
     slots = {}, activeSlot = {}, slotScroll = {}, saveNotice = {},
     workState = "idle",
   }, { __index = RomImporter })
@@ -118,11 +134,48 @@ assert(imp.activeSlot.firered == "slot3" and written.slot3
     and written.slot3.meta.cartId == Profile.ID
     and written.slot3.version == "firered",
   "RR .lua import did not land in the private cart scope")
+assert(imp.tab == "firered" and GameVersion.current == "firered"
+    and GameVersion.setCalls == 0,
+  "RR import changed the launcher game instead of only changing save scope")
 
-assert(SaveFileIO.exportLuaSlot("firered", "slot3") == true)
-assert(exportArgs[1] == "firered" and exportArgs[2] == "slot3"
+-- Accept the bad v0.5.18 private-runtime stamp once, but normalize it back to
+-- the public FireRed game identity before the imported slot is persisted.
+imp:_importSave("firered", "LEGACY")
+assert(imp.activeSlot.firered == "slot4" and written.slot4
+    and written.slot4.version == "firered"
+    and written.slot4.meta.cartId == Profile.ID,
+  "legacy radical_red_runtime save was not normalized into FireRed context")
+assert(imp.tab == "firered" and GameVersion.current == "firered"
+    and GameVersion.setCalls == 0,
+  "legacy RR import switched launcher game context")
+
+-- A failed write/readback must remove the newly allocated private slot rather
+-- than leaving a broken save entry behind.
+imp:_importSave("firered", "WRITE_FAIL")
+assert(deleted[#deleted] == "slot5" and written.slot5 == nil
+    and imp.saveNotice.firered and imp.saveNotice.firered.ok == false,
+  "failed RR save write did not roll back its private slot")
+imp:_importSave("firered", "READBACK_FAIL")
+assert(deleted[#deleted] == "slot6" and written.slot6 == nil
+    and imp.saveNotice.firered and imp.saveNotice.firered.ok == false,
+  "failed RR save readback did not roll back its private slot")
+
+local createdBeforeWrong = created
+imp:_importSave("firered", "WRONG")
+assert(created == createdBeforeWrong
+    and imp.saveNotice.firered and imp.saveNotice.firered.ok == false,
+  "non-FireRed save reached Radical Red private slot allocation")
+assert(imp.tab == "firered" and GameVersion.current == "firered"
+    and GameVersion.setCalls == 0,
+  "failed RR import changed launcher game context")
+
+assert(SaveFileIO.exportLuaSlot("firered", "slot4") == true)
+assert(exportArgs[1] == "firered" and exportArgs[2] == "slot4"
     and exportArgs[3] == Profile.ID,
   "RR .lua export changed game context instead of selecting the private save scope")
+assert(imp.tab == "firered" and GameVersion.current == "firered"
+    and GameVersion.setCalls == 0,
+  "RR export changed the launcher game")
 local ok, err = SaveFileIO.exportActiveSlot("firered")
 assert(ok == false and tostring(err):find("Original save", 1, true),
   "RR raw .sav export was not safely refused")
@@ -138,5 +191,12 @@ options.modsByVersion.firered.radical_red_experience = false
 imp:_refreshSlots("firered")
 assert(imp.slots.firered[1].id == "base",
   "disabling Radical Red did not restore FireRed's ordinary save card")
+assert(SaveFileIO.exportLuaSlot("firered", "base") == true
+    and exportArgs[1] == "firered" and exportArgs[2] == "base"
+    and exportArgs[3] == nil,
+  "disabled RR bridge still redirected ordinary FireRed export into the private cart")
+assert(imp.tab == "firered" and GameVersion.current == "firered"
+    and GameVersion.setCalls == 0,
+  "disabling RR save redirection changed launcher game context")
 
 print("PASS rr_save_transfer_test: RR import/export preserves FireRed launcher context")
