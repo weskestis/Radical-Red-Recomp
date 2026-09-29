@@ -898,9 +898,6 @@ function Runtime.install(mod, Profile, RR_Encounters)
   local cryOk, cryIds = pcall(cryChunk)
   assert(cryOk and type(cryIds) == "table",
     "Radical Red cry-id map is invalid")
-  assert(cryIds[1] == 1
-      and cryIds[Profile.SPECIES_COUNT - 1] == Profile.SPECIES_COUNT - 1,
-    "Radical Red cry-id map does not cover the expanded species table")
   assert(Audio._pack and Audio._pack.index and Audio._pack.index.cries,
     "Radical Red expanded cry pack was not installed")
   assert(tonumber(Audio._pack.index.cryCount) == Profile.SPECIES_COUNT,
@@ -909,6 +906,29 @@ function Runtime.install(mod, Profile, RR_Encounters)
   assert(tonumber(Audio._pack.index.songCount) == Profile.AUDIO_SONG_COUNT,
     ("Radical Red song/SFX pack has %s/%d rows")
       :format(tostring(Audio._pack.index.songCount), Profile.AUDIO_SONG_COUNT))
+
+  -- Validate every playable internal species, not just the endpoints. DPE's
+  -- RR build indexes gCryTable directly by species id, so any hole or old
+  -- FireRed remap would make that species play the wrong/missing cry.
+  local cryMappedSpecies = 0
+  for species = 1, Profile.SPECIES_COUNT - 1 do
+    assert(cryIds[species] == species,
+      ("Radical Red cry-id map changed species %d to row %s")
+        :format(species, tostring(cryIds[species])))
+    local cry = Audio._pack.index.cries[species]
+    assert(type(cry) == "table" and cry.sampleId ~= nil,
+      ("Radical Red species %d has no extracted cry sample"):format(species))
+    local sample = Audio._pack.samples[cry.sampleId]
+      or Audio._pack.samples[tostring(cry.sampleId)]
+    assert(type(sample) == "table"
+        and (tonumber(sample.freq) or 0) > 0
+        and (tonumber(sample.size) or 0) > 0,
+      ("Radical Red species %d has invalid cry sample metadata"):format(species))
+    cryMappedSpecies = cryMappedSpecies + 1
+  end
+  assert(cryMappedSpecies == Profile.SPECIES_COUNT - 1,
+    ("Radical Red cry map validated %d/%d playable species")
+      :format(cryMappedSpecies, Profile.SPECIES_COUNT - 1))
   Audio._pack.index.cryIds = cryIds
 
   installChrome(cache)
@@ -931,7 +951,7 @@ function Runtime.install(mod, Profile, RR_Encounters)
     battleAnimPackReset = true,
     expandedCries = true,
     cryCount = Audio._pack.index.cryCount,
-    cryMappedSpecies = Profile.SPECIES_COUNT - 1,
+    cryMappedSpecies = cryMappedSpecies,
     expandedSongs = true,
     songCount = Audio._pack.index.songCount,
     expandedScriptVars = expandedScriptVars,
