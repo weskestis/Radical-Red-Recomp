@@ -81,7 +81,7 @@ and ROM-free jobs can actually execute.
 
 | Area | Current status |
 |---|---|
-| Early RR save scope binding; schema-15/16/17/18 targeted upgrades; schema-19 partial/wrong-ROM audio cache rejection | PENDING — runner unavailable |
+| Early RR save scope binding; schema-15/16/17/18 targeted upgrades; truncated/wrong-ROM schema-19 audio and schema-18/19 animation cache rejection | PENDING — runner unavailable |
 | FireRed launcher context preserved for RR save import/export, legacy-stamp/ITEM_NONE normalization, and failed-slot rollback | PENDING — runner unavailable |
 | Physical left-shoulder Skills path plus Auto Run / Time Changer / Infinite Repel / PokéVial | PENDING — runner unavailable |
 | DexNav R/SELECT field shortcuts repair serialized ITEM_NONE=0 while preserving real registered key items | PENDING — runner unavailable |
