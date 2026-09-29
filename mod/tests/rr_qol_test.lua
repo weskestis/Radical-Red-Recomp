@@ -188,9 +188,16 @@ end
 package.loaded["src.core.game3.audio"] = Audio
 
 local Trainers = {}
+local eliteNames = {
+  [996] = "LORELEI",
+  [997] = "BRUNO",
+  [998] = "AGATHA",
+  [999] = "LANCE",
+}
 function Trainers.get(id)
-  if id == 999 then
-    return { id = id, name = "LANCE", className = "RR BOSS", class = 1 }
+  local name = eliteNames[id]
+  if name then
+    return { id = id, name = name, className = "RR BOSS", class = 1 }
   end
   return { id = id, name = "YOUNGSTER", className = "YOUNGSTER", class = 1 }
 end
@@ -372,9 +379,19 @@ end
 
 -- RR can repurpose trainer IDs/classes; the live trainer name must drive the
 -- Elite Four VS portrait instead of falling through to Blue/Gary.
-assert(BattleTransition.pickTrainer({ trainerId = 999, trainerClass = 1 })
-    == BattleTransition.ID.LANCE,
-  "repurposed RR Lance did not resolve the Lance VS intro")
+for trainerId, expected in pairs({
+  [996] = BattleTransition.ID.LORELEI,
+  [997] = BattleTransition.ID.BRUNO,
+  [998] = BattleTransition.ID.AGATHA,
+  [999] = BattleTransition.ID.LANCE,
+}) do
+  assert(BattleTransition.pickTrainer({ trainerId = trainerId, trainerClass = 1 })
+      == expected,
+    "repurposed RR Elite Four trainer " .. trainerId .. " resolved the wrong VS intro")
+end
+assert(BattleTransition.pickTrainer({ trainerId = 1000, trainerClass = 1 })
+    == BattleTransition.ID.BLUE,
+  "ordinary trainer stopped using the stock VS-intro fallback")
 
 -- Guarded fanfare recovery restarts the same field BGM only when Android has
 -- actually left the queue silent after the fanfare.
@@ -389,6 +406,22 @@ Audio.update(1 / 60)
 local recovered = Audio._played[#Audio._played]
 assert(recovered and recovered.id == 321 and recovered.restart == true,
   "silent BGM did not recover after a fanfare")
+
+-- If a field script deliberately changes the song during the fanfare, the
+-- delayed Android recovery must not resurrect the old map song.
+local playedBeforeChange = #Audio._played
+Audio._currentSong = { id = 321 }
+Audio._mapSong, Audio._bgmGen = 321, 321
+Audio._bgmSource.playing = false
+Audio._fanfareActive, Audio._finishFanfare = true, true
+Audio.update(1 / 60) -- captures 321, then the stock update ends the fanfare
+Audio._currentSong = { id = 555 }
+Audio._mapSong, Audio._bgmGen = 555, 555
+Audio.update(1 / 60)
+Audio.update(1 / 60)
+Audio.update(1 / 60)
+assert(#Audio._played == playedBeforeChange,
+  "fanfare recovery stomped a field script's newer BGM")
 
 -- League/trainer battle music must restore the map song captured before the
 -- battle BGM replaces it.
