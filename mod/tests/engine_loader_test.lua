@@ -1448,6 +1448,16 @@ do
     Battle.isActive = function() return false end
     input:reset()
 
+    local skillGame = { phase = "field", session = session, input = input }
+    local function skillTick()
+      return loader.hooks:call("core.update", function(g)
+        -- core.update wraps the real Game:update path. Advance Input here so
+        -- queued edges/pressed state have the same lifetime as the pinned host.
+        g.input:step()
+        return "updated"
+      end, skillGame, 1 / 60)
+    end
+
     input:gamepadpressed(nil, "leftshoulder")
     local sawQueuedL = false
     for _, key in ipairs(input.pressQueue or {}) do
@@ -1455,25 +1465,21 @@ do
     end
     assert(sawQueuedL and input:isDown("l"),
       "pinned leftshoulder input did not emit the logical L edge")
-    loader.hooks:call("core.update", function() return "updated" end,
-      { phase = "field", session = session, input = input }, 1 / 60)
+    assert(skillTick() == "updated")
     local firstSkillLayer = Stack.top()
     assert(firstSkillLayer and firstSkillLayer.id == "rr_skills",
       "physical left shoulder did not open the live Radical Red Skills menu")
     firstSkillLayer.mod.close(true)
 
     -- Still physically held: no second open.
-    loader.hooks:call("core.update", function() return "updated" end,
-      { phase = "field", session = session, input = input }, 1 / 60)
+    assert(skillTick() == "updated")
     assert(Stack.top() == nil,
       "held L reopened the Skills menu without a release edge")
 
     input:gamepadreleased(nil, "leftshoulder")
-    loader.hooks:call("core.update", function() return "updated" end,
-      { phase = "field", session = session, input = input }, 1 / 60)
+    assert(skillTick() == "updated")
     input:gamepadpressed(nil, "leftshoulder")
-    loader.hooks:call("core.update", function() return "updated" end,
-      { phase = "field", session = session, input = input }, 1 / 60)
+    assert(skillTick() == "updated")
     local secondSkillLayer = Stack.top()
     assert(secondSkillLayer and secondSkillLayer.id == "rr_skills",
       "Skills menu did not re-arm after releasing and pressing L again")
