@@ -1620,9 +1620,10 @@ local function previewWishingPieceRaid(deps, rom, ctx)
   -- inventory or the den-done flag is touched.  Restore every preview mutation
   -- before returning so AVAILABLE remains a pure probe.
   setVar(deps, ctx, VAR.RAID_NUMBER_OFFSET, nextOffset)
-  local raid = determineRaid(deps, rom, ctx)
+  local ok, raid = pcall(determineRaid, deps, rom, ctx)
   setVar(deps, ctx, VAR.RAID_NUMBER_OFFSET, oldOffset)
   state.current, state.stars, state.stable = oldCurrent, oldStars, oldStable
+  if not ok then error(raid, 0) end
   return raid, nextOffset
 end
 
