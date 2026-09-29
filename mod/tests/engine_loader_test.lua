@@ -1492,37 +1492,46 @@ do
     Battle.isActive = savedBattleActive
   end
 
-  -- Find a boss from the live extracted trainer table and prove the enabled
-  -- species randomizer preserves the authored party while an ordinary trainer
-  -- is still randomized below.
+  -- Census the live extracted trainer table, not just one convenient boss.
+  -- Every identity the runtime classifies as authored must preserve its exact
+  -- party under the enabled species randomizer. This covers recurring bosses
+  -- whose trainer class is shared with ordinary opponents as well as leaders,
+  -- admins, Elite Four/Champion records, and every protected rival branch.
   local Trainers = require("src.core.game3.scripting.trainers")
-  local bossId, bossClass
+  local RRRandomizer = assert(loadfile(
+    "mods/radical_red_experience/lib/rr_randomizer.lua"))()
+  local requiredBossNames = {
+    GIOVANNI = false, ARCHER = false, ARIANA = false,
+    CLAIR = false, BRENDAN = false, MAY = false,
+  }
+  local protectedBosses = 0
   for id = 0, 1200 do
     local row = Trainers.get(id)
-    if row then
-      local className = tostring(row.className or ""):upper()
-      local name = tostring(row.name or ""):upper()
-      if className:find("LEADER", 1, true)
-          or className:find("ELITE", 1, true)
-          or className:find("CHAMPION", 1, true)
-          or className:find("ADMIN", 1, true)
-          or className:find("BOSS", 1, true)
-          or name == "GIOVANNI" then
-        bossId, bossClass = id, tonumber(row.class) or 1
-        break
-      end
+    if row and RRRandomizer.isFixedBoss(tonumber(row.class) or 1, id) then
+      protectedBosses = protectedBosses + 1
+      local name = tostring(row.name or row.trainerName or ""):upper()
+      if requiredBossNames[name] ~= nil then requiredBossNames[name] = true end
+
+      local bossParty = { {
+        species = 25, speciesId = 25, level = 50, heldItem = 13,
+        moves = { "THUNDERBOLT" }, moveIds = { 85 },
+      } }
+      local bossPassed = loader.hooks:call("trainer.party",
+        function(_, _, party) return party end,
+        tonumber(row.class) or 1, id, bossParty)
+      assert(bossPassed == bossParty
+          and bossPassed[1].speciesId == 25
+          and bossPassed[1].heldItem == 13
+          and bossPassed[1].moveIds[1] == 85,
+        ("authored boss/rival %d (%s) was randomized in the exact RR runtime")
+          :format(id, name))
     end
   end
-  assert(bossId ~= nil, "exact RR trainer table exposed no authored boss")
-  local bossParty = { {
-    species = 25, speciesId = 25, level = 50, heldItem = 13,
-    moves = { "THUNDERBOLT" }, moveIds = { 85 },
-  } }
-  local bossPassed = loader.hooks:call("trainer.party",
-    function(_, _, party) return party end, bossClass, bossId, bossParty)
-  assert(bossPassed == bossParty and bossPassed[1].speciesId == 25
-      and bossPassed[1].heldItem == 13 and bossPassed[1].moveIds[1] == 85,
-    "authored boss party was randomized in the exact RR runtime")
+  assert(protectedBosses >= 20,
+    "exact RR boss census was unexpectedly small: " .. protectedBosses)
+  for name, found in pairs(requiredBossNames) do
+    assert(found, "exact RR boss census did not protect documented " .. name)
+  end
 
   local ordinaryParty = { { species = 1, speciesId = 1, level = 5 } }
   local randomizedTrainer = loader.hooks:call("trainer.party",
