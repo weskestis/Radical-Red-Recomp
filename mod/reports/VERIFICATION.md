@@ -82,7 +82,7 @@ and ROM-free jobs can actually execute.
 | Area | Current status |
 |---|---|
 | Early RR save scope binding and schema-15/16/17 targeted upgrades | PENDING — runner unavailable |
-| FireRed launcher context preserved for RR save import/export | PENDING — runner unavailable |
+| FireRed launcher context preserved for RR save import/export, legacy-stamp normalization, and failed-slot rollback | PENDING — runner unavailable |
 | L-button Skills menu: Auto Run / Time Changer / Infinite Repel / PokéVial | PENDING — runner unavailable |
 | Authored boss teams excluded from ordinary trainer randomization | PENDING — runner unavailable |
 | Wishing Piece reactivates a cleared raid den and advances raid sequence | PENDING — runner unavailable |
