@@ -1,6 +1,6 @@
 {
   "modkit": "1.0.0",
-  "packed_at": "2026-09-29T01:47:59Z",
+  "packed_at": "2026-09-29T04:32:25Z",
   "id": "radical_red_experience",
   "version": "0.5.19",
   "api": 2,
@@ -13,13 +13,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 23662,
-      "sha256": "0f199719ce9ddcdfa30f3879a28f38dd99633c086d3a57b5357ead7f82ced63c"
+      "bytes": 23772,
+      "sha256": "178d1cd9cce298b2a3b34e875d348ddfa1eb5dc1a5569f0e403a7e2c2a2fabf4"
     },
     {
       "path": "docs/CHECKPOINT_STATUS.md",
-      "bytes": 10778,
-      "sha256": "31ad670d0782930f20f381e7a82e68e29caaf6ba9c0166e6a20d1aee49d84c15"
+      "bytes": 10839,
+      "sha256": "56fa24b25b99ca2675a5aa5dc632b80b720bca29aaf4b6ec73cf65b5b1dc623c"
     },
     {
       "path": "docs/PORTING_MATRIX.md",
@@ -38,8 +38,8 @@
     },
     {
       "path": "lib/rr_extract.lua",
-      "bytes": 42180,
-      "sha256": "7efa82824fdecadee37f1e67c954717c0afe637b33d33a49ff65bf9ac04e5ef0"
+      "bytes": 42237,
+      "sha256": "a2a101f8e6adf2851a88e1696d0201101d4b7d39fc439a0c77b82464f76fc7af"
     },
     {
       "path": "lib/rr_facilities.lua",
@@ -88,8 +88,8 @@
     },
     {
       "path": "lib/rr_runtime.lua",
-      "bytes": 36293,
-      "sha256": "fd54b906eb54a80dc5f7e5876c03a2c9b7504af7406bd3493be2b97bcfc8e0c7"
+      "bytes": 37294,
+      "sha256": "02fe635cc5aeacff1173f760da07c30edafea08c69b1e79372c0b8eaae828ce7"
     },
     {
       "path": "lib/rr_story.lua",
@@ -138,13 +138,13 @@
     },
     {
       "path": "reports/VERIFICATION.md",
-      "bytes": 7792,
-      "sha256": "3db2f19f68d0c3a76439b63450d0dc1173e761b2e41b923b84252b2a7671b9f9"
+      "bytes": 7836,
+      "sha256": "82bcadc039719d34e5b2902745faaedeb81a80fa7992725a01873725b8d7932a"
     },
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4695,
-      "sha256": "8a32ce7c5dd300b5f1bb6189498a230814c4e44b02b3d18e6f783e8d908f623f"
+      "sha256": "801ec9e747b1f3b6eabd8ca5ac6014a3ca81325337b3dfa0048a66a4217fe85c"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
@@ -163,8 +163,8 @@
     },
     {
       "path": "tests/engine_loader_test.lua",
-      "bytes": 87966,
-      "sha256": "f172f3d7ba554ca6b2f743e6decda8b2b1bffde46646e41faf3ba6be88d373d3"
+      "bytes": 88467,
+      "sha256": "4e6c915739f997858f7d9ae313e331ee4292b01f8c2cdc9512c7923b8b963b01"
     },
     {
       "path": "tests/main_overlay_test.lua",
