@@ -82,8 +82,9 @@ and ROM-free jobs can actually execute.
 | Area | Current status |
 |---|---|
 | Early RR save scope binding and schema-15/16/17 targeted upgrades | PENDING — runner unavailable |
-| FireRed launcher context preserved for RR save import/export, legacy-stamp normalization, and failed-slot rollback | PENDING — runner unavailable |
+| FireRed launcher context preserved for RR save import/export, legacy-stamp/ITEM_NONE normalization, and failed-slot rollback | PENDING — runner unavailable |
 | Physical left-shoulder Skills path plus Auto Run / Time Changer / Infinite Repel / PokéVial | PENDING — runner unavailable |
+| DexNav R/SELECT field shortcuts repair serialized ITEM_NONE=0 while preserving real registered key items | PENDING — runner unavailable |
 | Complete extracted trainer-table census preserves every authored boss/rival while ordinary trainers still randomize | PENDING — runner unavailable |
 | Wishing Piece transactionally reactivates a cleared den, validates the reroll before spending, and advances/wraps raid sequence | PENDING — runner unavailable |
 | Fairy type badge extracted/rendered from CFRU tile `0x100` | PENDING — runner unavailable |
