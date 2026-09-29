@@ -901,6 +901,9 @@ function Runtime.install(mod, Profile, RR_Encounters)
   assert(tonumber(Audio._pack.index.cryCount) == Profile.SPECIES_COUNT,
     ("Radical Red cry pack has %s/%d rows")
       :format(tostring(Audio._pack.index.cryCount), Profile.SPECIES_COUNT))
+  assert(tonumber(Audio._pack.index.songCount) == Profile.AUDIO_SONG_COUNT,
+    ("Radical Red song/SFX pack has %s/%d rows")
+      :format(tostring(Audio._pack.index.songCount), Profile.AUDIO_SONG_COUNT))
   Audio._pack.index.cryIds = cryIds
 
   installChrome(cache)
@@ -924,6 +927,8 @@ function Runtime.install(mod, Profile, RR_Encounters)
     expandedCries = true,
     cryCount = Audio._pack.index.cryCount,
     cryMappedSpecies = Profile.SPECIES_COUNT - 1,
+    expandedSongs = true,
+    songCount = Audio._pack.index.songCount,
     expandedScriptVars = expandedScriptVars,
     trueMapBounds = true,
     mapLayoutsAudited = layoutCount,
