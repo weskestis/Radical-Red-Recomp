@@ -93,9 +93,9 @@ and ROM-free jobs can actually execute.
 | U-turn / Volt Switch / Flip Turn perform normal post-hit pivot switching | PENDING — runner unavailable |
 | Full 1,376-row cry table; 1,375/1,375 playable species identity-map to valid samples; modern playback sentinels | PENDING — runner unavailable |
 | CFRU/RR 526-row song/SFX table and expanded-move sound references | PENDING — runner unavailable |
-| Full 1,004-move CFRU animation pack / 371 particle rows / 77 backgrounds | PENDING — runner unavailable |
+| Full 1,004-move CFRU animation pack / 371 particle rows / 77 backgrounds; all 1,004 ROM pointers and decoded rows audited | PENDING — runner unavailable |
 | U-turn / Fairy Wind / Play Rough / Dazzling Gleam real visual+SFX scripts | PENDING — runner unavailable |
-| Reported modern move scripts contain no unresolved CFRU callback/task pointers | PENDING — runner unavailable |
+| All 1,004 move scripts contain no unresolved labels/tasks/tags and reference only cached SFX/song rows | PENDING — runner unavailable |
 | Package manifest / SHA-256 cross-reference / private-content policy | PASS — source-level audit |
 
 The exact loader integration test executes discovery, required-import
