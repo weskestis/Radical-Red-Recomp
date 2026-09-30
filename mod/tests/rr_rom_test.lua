@@ -18,7 +18,7 @@ local Profile = assert(loadfile("lib/rr_profile.lua"))()
 local rom = RR.open(imports, RR.IMPORT_ID)
 local report = rom:verify()
 
-assert(Profile.CACHE_SCHEMA == 16)
+assert(Profile.CACHE_SCHEMA == 19)
 assert(Profile.OFFSET.wildMonDayHeaders == 0x1166AB8)
 assert(Profile.OFFSET.wildMonNightHeaders == 0x1166428)
 assert(Profile.OFFSET.overworldGraphicsPointers == 0x0EB1000)
