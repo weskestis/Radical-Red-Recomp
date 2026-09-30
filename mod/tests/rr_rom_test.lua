@@ -47,6 +47,32 @@ local function rawU32(offset)
     + bytes:byte(3) * 0x10000 + bytes:byte(4) * 0x1000000
 end
 
+-- Temporary exact-ROM diagnostic for a populated form whose expanded cry row
+-- has no standalone sample. Keep this before runtime bootstrap so CI can show
+-- the cartridge identity/base mapping even when runtime validation stops.
+do
+  local species = 1291
+  local row = rom:species(species)
+  local nat = rawU16(Profile.OFFSET.speciesToNationalDex + (species - 1) * 2)
+  local sameName = {}
+  for id = 1, 1375 do
+    if id ~= species and rom:name(id) == row.name then
+      sameName[#sameName + 1] = ("%d:nat%d"):format(
+        id, rawU16(Profile.OFFSET.speciesToNationalDex + (id - 1) * 2))
+    end
+  end
+  local nearby = {}
+  for id = species - 5, species + 5 do
+    nearby[#nearby + 1] = ("%d=%s/nat%d"):format(
+      id, rom:name(id),
+      rawU16(Profile.OFFSET.speciesToNationalDex + (id - 1) * 2))
+  end
+  print(("CRY_DIAG species=%d name=%s nat=%d hp=%d types=%s/%s same=[%s] nearby=[%s]")
+    :format(species, row.name, nat, row.baseStats.hp,
+      row.types[1], row.types[2], table.concat(sameName, ","),
+      table.concat(nearby, ",")))
+end
+
 -- These are the expanded 1,376-species DPE coordinate registries, not
 -- FireRed's still-present 412-entry originals. Cyndaquil's RR back sprite is
 -- six pixels higher than the stale stock value that caused the video crop.
