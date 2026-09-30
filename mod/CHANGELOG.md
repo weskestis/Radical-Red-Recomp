@@ -34,8 +34,8 @@
 - Replace FireRed's short audio assumptions with Radical Red/CFRU's live
   repointed tables. The cache now extracts all **1,376 cry ToneData rows** plus
   the full **526-row song/SFX table**. Runtime and exact-ROM gates census all
-  **1,375 internal species rows**, requiring valid direct cry samples or canonical
-  National Dex base-species aliases for the **1,350 populated species** while excluding
+  **1,375 internal species rows**, requiring valid direct cry samples or same-National-Dex
+  family aliases for the **1,350 populated species** while excluding
   the 25 reserved FireRed internal slots; modern playback
   sentinels still exercise the host voice path.
 - Follow CFRU's repointed battle-animation tables and extract all **1,004 move
