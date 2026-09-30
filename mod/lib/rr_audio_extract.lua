@@ -529,7 +529,7 @@ end
 function ExtractAudio.run(rom, cache, opts)
   opts = opts or {}
   local progress = opts.progress
-  local root = opts.root or "data/generated/gba/audio"
+  local root = opts.root or ("data/" .. "generated/gba/audio")
   local data = rom_bytes(rom)
   local songs = {}
   local cries = {}
