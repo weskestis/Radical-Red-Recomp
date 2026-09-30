@@ -193,8 +193,11 @@ if pendingExports and pendingExports.phase == "RR_PREPARING" then
     end
     frames = frames + 1
   end
+  local bootstrap = pendingExports.bootstrap or {}
   assert(pendingExports.phase == "RR_RUNTIME_DATASET",
-    pendingExports.bootstrap and pendingExports.bootstrap.error
+    bootstrap.error
+      and (("deferred Radical Red setup failed during %s: %s")
+        :format(tostring(bootstrap.stage or "unknown"), tostring(bootstrap.error)))
       or ("deferred Radical Red setup did not finish after " .. frames .. " frames"))
   print("DEFERRED_SETUP_FRAMES " .. frames)
   print(("DEFERRED_MAX_CHUNK %.3fs %s"):format(maxChunk, maxStage))
