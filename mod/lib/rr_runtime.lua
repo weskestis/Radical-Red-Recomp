@@ -907,28 +907,36 @@ function Runtime.install(mod, Profile, RR_Encounters)
     ("Radical Red song/SFX pack has %s/%d rows")
       :format(tostring(Audio._pack.index.songCount), Profile.AUDIO_SONG_COUNT))
 
-  -- Validate every playable internal species, not just the endpoints. DPE's
-  -- RR build indexes gCryTable directly by species id, so any hole or old
-  -- FireRed remap would make that species play the wrong/missing cry.
-  local cryMappedSpecies = 0
+  -- Validate every internal identity row, but require an extracted sample only
+  -- for populated species. RR retains FireRed's 25 reserved internal slots
+  -- (252..276); those zero-stat rows are not playable and intentionally have
+  -- no cry sample.
+  local Pokemon = require("src.core.game3.pokemon")
+  local cryMappedSpecies, cryReservedSpecies = 0, 0
   for species = 1, Profile.SPECIES_COUNT - 1 do
     assert(cryIds[species] == species,
       ("Radical Red cry-id map changed species %d to row %s")
         :format(species, tostring(cryIds[species])))
-    local cry = Audio._pack.index.cries[species]
-    assert(type(cry) == "table" and cry.sampleId ~= nil,
-      ("Radical Red species %d has no extracted cry sample"):format(species))
-    local sample = Audio._pack.samples[cry.sampleId]
-      or Audio._pack.samples[tostring(cry.sampleId)]
-    assert(type(sample) == "table"
-        and (tonumber(sample.freq) or 0) > 0
-        and (tonumber(sample.size) or 0) > 0,
-      ("Radical Red species %d has invalid cry sample metadata"):format(species))
-    cryMappedSpecies = cryMappedSpecies + 1
+    local stats = Pokemon.stats(species)
+    local populated = type(stats) == "table" and (tonumber(stats.hp) or 0) > 0
+    if populated then
+      local cry = Audio._pack.index.cries[species]
+      assert(type(cry) == "table" and cry.sampleId ~= nil,
+        ("Radical Red species %d has no extracted cry sample"):format(species))
+      local sample = Audio._pack.samples[cry.sampleId]
+        or Audio._pack.samples[tostring(cry.sampleId)]
+      assert(type(sample) == "table"
+          and (tonumber(sample.freq) or 0) > 0
+          and (tonumber(sample.size) or 0) > 0,
+        ("Radical Red species %d has invalid cry sample metadata"):format(species))
+      cryMappedSpecies = cryMappedSpecies + 1
+    else
+      cryReservedSpecies = cryReservedSpecies + 1
+    end
   end
-  assert(cryMappedSpecies == Profile.SPECIES_COUNT - 1,
-    ("Radical Red cry map validated %d/%d playable species")
-      :format(cryMappedSpecies, Profile.SPECIES_COUNT - 1))
+  assert(cryMappedSpecies == 1350 and cryReservedSpecies == 25,
+    ("Radical Red cry census changed: %d populated / %d reserved")
+      :format(cryMappedSpecies, cryReservedSpecies))
   Audio._pack.index.cryIds = cryIds
 
   installChrome(cache)
@@ -952,6 +960,7 @@ function Runtime.install(mod, Profile, RR_Encounters)
     expandedCries = true,
     cryCount = Audio._pack.index.cryCount,
     cryMappedSpecies = cryMappedSpecies,
+    cryReservedSpecies = cryReservedSpecies,
     expandedSongs = true,
     songCount = Audio._pack.index.songCount,
     expandedScriptVars = expandedScriptVars,
