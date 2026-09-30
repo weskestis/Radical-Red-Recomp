@@ -640,7 +640,7 @@ local function writeRrCryIds(cache, Profile)
     table.concat(lines, "\n"))
 end
 
-local function extractExpandedAudio(data, cache, Profile, progress)
+local function extractExpandedAudio(data, cache, Profile, progress, AudioExtract)
   assert(type(data) == "string" and #data == Profile.ROM_SIZE,
     "Radical Red expanded audio extraction needs the complete validated ROM")
   local ptr = leU32(data, assert(Profile.OFFSET.cryTablePointerSlot))
@@ -674,16 +674,14 @@ local function extractExpandedAudio(data, cache, Profile, progress)
   Versions.AUDIO.song_table = songTable
   Versions.AUDIO.song_count = Profile.AUDIO_SONG_COUNT
 
-  local ExtractAudio = require("src.import.gba.extract_audio")
+  local ExtractAudio = AudioExtract or require("src.import.gba.extract_audio")
   -- extract_audio captures these counts when its module is first required.
   -- Restamp it in case another launcher path loaded the module before RR.
   ExtractAudio.CRY_COUNT = Profile.SPECIES_COUNT
 
-  -- The pinned host extractor has no progress callback. During first-launch
-  -- conversion it can otherwise hold one coroutine resume for several seconds
-  -- while writing hundreds of song/audio cache files. Proxy cache writes and
-  -- report a checkpoint every small batch; cached/upgrade paths can omit the
-  -- callback and remain synchronous.
+  -- RR vendors the exact pinned audio extractor with cooperative progress
+  -- checkpoints in its song, cry, and serialization loops. Keep the cache
+  -- proxy for bounded write/GC behavior, but let the extractor own yielding.
   local audioCache = cache
   if progress then
     local writes = 0
@@ -692,7 +690,7 @@ local function extractExpandedAudio(data, cache, Profile, progress)
       local ok, err = cache:write(path, bytes)
       writes = writes + 1
       if writes % 8 == 0 then
-        progress("rom_assets_audio", writes, Profile.AUDIO_SONG_COUNT)
+        progress("rom_assets_audio_write", writes, Profile.AUDIO_SONG_COUNT)
       end
       return ok, err
     end
@@ -707,42 +705,12 @@ local function extractExpandedAudio(data, cache, Profile, progress)
     })
   end
 
-  -- The extractor's final table serialization happens before cache:write(),
-  -- so write-based checkpoints alone cannot split that CPU-heavy phase.
-  -- Temporarily wrap pairs() while this extraction coroutine is active. The
-  -- wrapper is semantics-preserving for other callers and checkpoints only
-  -- when iteration belongs to this exact coroutine.
-  local extractionCoroutine = coroutine.running()
-  local extractEnv = getfenv and getfenv(ExtractAudio.run) or nil
-  local originalEnvPairs = extractEnv and rawget(extractEnv, "pairs") or nil
-  local basePairs = extractEnv and extractEnv.pairs or pairs
-  local iteratedEntries = 0
-  local pairsWrapped = progress ~= nil and extractionCoroutine ~= nil
-    and type(extractEnv) == "table" and type(basePairs) == "function"
-  if pairsWrapped then
-    extractEnv.pairs = function(tbl)
-      local iter, state, key = basePairs(tbl)
-      local function nextPair(st, current)
-        local nextKey, value = iter(st, current)
-        if nextKey ~= nil and coroutine.running() == extractionCoroutine then
-          iteratedEntries = iteratedEntries + 1
-          if iteratedEntries % 64 == 0 then
-            progress("rom_assets_audio_serialize", iteratedEntries,
-              iteratedEntries + 64)
-          end
-        end
-        return nextKey, value
-      end
-      return nextPair, state, key
-    end
-  end
-
   local callOk, ok, indexOrErr = pcall(ExtractAudio.run,
     { data = data }, audioCache, {
       sha1 = Profile.SHA1,
       root = Profile.extractRoot() .. "/audio",
+      progress = progress,
     })
-  if pairsWrapped then extractEnv.pairs = originalEnvPairs end
   assert(callOk, "Radical Red audio extractor crashed: " .. tostring(ok))
   assert(ok, "Radical Red audio extraction failed: " .. tostring(indexOrErr))
   local index = assert(indexOrErr, "Radical Red audio extractor returned no index")
@@ -762,7 +730,7 @@ local function extractExpandedAudio(data, cache, Profile, progress)
   }
 end
 
-local function runGraphicalAssets(adapter, cache, Profile, progress)
+local function runGraphicalAssets(adapter, cache, Profile, progress, AudioExtract)
   assert(love and love.image and love.image.newImageData,
     "Radical Red's first launch needs the normal LÖVE graphics runtime")
   local root = Profile.extractRoot()
@@ -814,7 +782,7 @@ local function runGraphicalAssets(adapter, cache, Profile, progress)
   progress("rom_assets", 2, 3)
 
   if not audioReady then
-    extractExpandedAudio(data, cache, Profile, progress)
+    extractExpandedAudio(data, cache, Profile, progress, AudioExtract)
   end
   progress("rom_assets", 3, 3)
 
@@ -1011,7 +979,8 @@ function Extractor.ensure(mod, Profile, opts)
       -- Audio extraction needs the raw WaveData payloads. Read the validated
       -- 32 MiB ROM once, rebuild only /audio, then release it immediately.
       local audioData = readFullRom(adapter, Profile)
-      local audio = extractExpandedAudio(audioData, mod.cache, Profile)
+      local audio = extractExpandedAudio(audioData, mod.cache, Profile, progress,
+        opts.audioExtractor)
       audioData = nil
       collectgarbage("collect")
       step = step + 1
@@ -1094,7 +1063,8 @@ function Extractor.ensure(mod, Profile, opts)
   rom:clearCache()
 
   if not opts.skipGraphicalAssets then
-    runGraphicalAssets(adapter, mod.cache, Profile, progress)
+    runGraphicalAssets(adapter, mod.cache, Profile, progress,
+      opts.audioExtractor)
   end
 
   local essentialsOk, missing = requireFiles(mod.cache, {
