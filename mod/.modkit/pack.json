@@ -28,8 +28,8 @@
     },
     {
       "path": "lib/rr_audio_extract.lua",
-      "bytes": 24767,
-      "sha256": "a41615230599f396c0af742fd4b457cd1285fe1f06f2af7c9dc0e31b669923b3"
+      "bytes": 24775,
+      "sha256": "c7cfec5b6f237aae5e8618b0a1f31eea29b9a6203a6b4a85949e36ae0fdfb032"
     },
     {
       "path": "lib/rr_battle.lua",
@@ -43,8 +43,8 @@
     },
     {
       "path": "lib/rr_extract.lua",
-      "bytes": 44404,
-      "sha256": "c4cc5845b609375af0087fae144d901a238c5bc6c053b38e2112268e23b87440"
+      "bytes": 45686,
+      "sha256": "b6a90202d0c0f3bcc741d9985db38ecae47d72fe4dfed98876b1fb0f7332c697"
     },
     {
       "path": "lib/rr_facilities.lua",
@@ -149,7 +149,7 @@
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4788,
-      "sha256": "143a84a411ae57a21872ebde56344d61eaa4ba74a1692d7d093613becd9faa5f"
+      "sha256": "e01c5e9b2ab55b6d0fa6e9664ab5575a6fc96e66ddf505b40ec9a347d736672d"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
