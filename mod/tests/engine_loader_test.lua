@@ -318,8 +318,8 @@ assert(exports.runtimeReport.saveTransferBridge == true)
 assert(exports.runtimeReport.battleAnimPackReset == true)
 assert(exports.runtimeReport.expandedCries == true)
 assert(exports.runtimeReport.cryCount == 1376)
-assert(exports.runtimeReport.cryMappedSpecies == 1350)
-assert(exports.runtimeReport.cryReservedSpecies == 25)
+assert(exports.runtimeReport.cryMappedSpecies == 1348)
+assert(exports.runtimeReport.cryReservedSpecies == 27)
 assert((exports.runtimeReport.cryAliasedSpecies or 0) > 0)
 assert(exports.runtimeReport.expandedSongs == true)
 assert(exports.runtimeReport.songCount == 526)
@@ -569,7 +569,7 @@ do
       reserved = reserved + 1
     end
   end
-  assert(mapped == 1350 and reserved == 25,
+  assert(mapped == 1348 and reserved == 27,
     ("complete RR cry census covered %d populated / %d reserved species")
       :format(mapped, reserved))
   assert(aliases == exports.runtimeReport.cryAliasedSpecies and aliases > 0,
