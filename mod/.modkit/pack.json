@@ -88,8 +88,8 @@
     },
     {
       "path": "lib/rr_runtime.lua",
-      "bytes": 39253,
-      "sha256": "6b2a205b92531d7bea27f91c6072db6ec75cdb710d354d9b2ccb06cf4b81a4fa"
+      "bytes": 39505,
+      "sha256": "a8bab9312bdb53267388e8ba0cf67bea7058043f242c1e67ea8b24cb57962fc0"
     },
     {
       "path": "lib/rr_story.lua",
@@ -113,8 +113,8 @@
     },
     {
       "path": "main.lua",
-      "bytes": 13343,
-      "sha256": "88a1f572cfa37bf83de2e5ce34c5fcf25e1a0b3b9b5ee01d348045a592d765e4"
+      "bytes": 13355,
+      "sha256": "d07dcda76f32c278536844155797fbce5d122f0fb30ca3dce9710a6bc4a653a8"
     },
     {
       "path": "manifest.json",
@@ -144,7 +144,7 @@
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4695,
-      "sha256": "42ccbab5c63abcd5d50ae35f30a70adfde71101fb72fc467506d8850c97ee439"
+      "sha256": "c40c3b3ba6abed4bc63108e8adaaa3ea469f643f65a391289e76b4433ec28cdc"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
