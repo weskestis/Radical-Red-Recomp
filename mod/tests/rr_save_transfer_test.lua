@@ -56,15 +56,18 @@ package.loaded["src.core.SaveData"] = SaveData
 
 local SaveSerializer = {}
 function SaveSerializer.decode(bytes)
-  if bytes == "BAD" then return nil, "bad" end
-  local version = bytes == "LEGACY" and "radical_red_runtime"
-    or bytes == "WRONG" and "emerald" or "firered"
+  local function marked(name)
+    return type(bytes) == "string" and bytes:find(name, 1, true) ~= nil
+  end
+  if marked("BAD") then return nil, "bad" end
+  local version = marked("LEGACY") and "radical_red_runtime"
+    or marked("WRONG") and "emerald" or "firered"
   return {
     version = version, generation = 3, engine = "game3",
     party = {}, meta = {}, name = "RED",
-    registeredItem = bytes == "ZERO_REGISTERED" and 0 or nil,
-    __writeFail = bytes == "WRITE_FAIL" or nil,
-    __readbackFail = bytes == "READBACK_FAIL" or nil,
+    registeredItem = marked("ZERO_REGISTERED") and 0 or nil,
+    __writeFail = marked("WRITE_FAIL") or nil,
+    __readbackFail = marked("READBACK_FAIL") or nil,
   }
 end
 package.loaded["src.core.SaveSerializer"] = SaveSerializer
@@ -141,7 +144,7 @@ assert(imp.tab == "firered" and GameVersion.current == "firered"
 
 -- Accept the bad v0.5.18 private-runtime stamp once, but normalize it back to
 -- the public FireRed game identity before the imported slot is persisted.
-imp:_importSave("firered", "LEGACY")
+imp:_importSave("firered", "return { fixture='LEGACY' }")
 assert(imp.activeSlot.firered == "slot4" and written.slot4
     and written.slot4.version == "firered"
     and written.slot4.meta.cartId == Profile.ID,
@@ -153,24 +156,24 @@ assert(imp.tab == "firered" and GameVersion.current == "firered"
 -- ITEM_NONE can be serialized as numeric zero by older/original save paths.
 -- Normalize it during import so field SELECT does not treat item 0 as a real
 -- registered key item.
-imp:_importSave("firered", "ZERO_REGISTERED")
+imp:_importSave("firered", "return { fixture='ZERO_REGISTERED' }")
 assert(imp.activeSlot.firered == "slot5" and written.slot5
     and written.slot5.registeredItem == nil,
   "RR import preserved registeredItem=0 instead of ITEM_NONE")
 
 -- A failed write/readback must remove the newly allocated private slot rather
 -- than leaving a broken save entry behind.
-imp:_importSave("firered", "WRITE_FAIL")
+imp:_importSave("firered", "return { fixture='WRITE_FAIL' }")
 assert(deleted[#deleted] == "slot6" and written.slot6 == nil
     and imp.saveNotice.firered and imp.saveNotice.firered.ok == false,
   "failed RR save write did not roll back its private slot")
-imp:_importSave("firered", "READBACK_FAIL")
+imp:_importSave("firered", "return { fixture='READBACK_FAIL' }")
 assert(deleted[#deleted] == "slot7" and written.slot7 == nil
     and imp.saveNotice.firered and imp.saveNotice.firered.ok == false,
   "failed RR save readback did not roll back its private slot")
 
 local createdBeforeWrong = created
-imp:_importSave("firered", "WRONG")
+imp:_importSave("firered", "return { fixture='WRONG' }")
 assert(created == createdBeforeWrong
     and imp.saveNotice.firered and imp.saveNotice.firered.ok == false,
   "non-FireRed save reached Radical Red private slot allocation")
