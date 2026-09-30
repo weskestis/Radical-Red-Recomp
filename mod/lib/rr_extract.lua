@@ -676,8 +676,10 @@ local function extractExpandedAudio(data, cache, Profile, progress, AudioExtract
 
   local ExtractAudio = AudioExtract or require("src.import.gba.extract_audio")
   -- extract_audio captures these counts when its module is first required.
-  -- Restamp it in case another launcher path loaded the module before RR.
+  -- Restamp both expanded dimensions because the RR-local copy is loaded before
+  -- Profile.apply() replaces FireRed's stock audio metadata.
   ExtractAudio.CRY_COUNT = Profile.SPECIES_COUNT
+  ExtractAudio.SONG_COUNT = Profile.AUDIO_SONG_COUNT
 
   -- RR vendors the exact pinned audio extractor with cooperative progress
   -- checkpoints in its song, cry, and serialization loops. Keep the cache
