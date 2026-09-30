@@ -544,10 +544,10 @@ do
         ("species %d has invalid resolved cry row %s"):format(species, tostring(cryIndex)))
       if cryIndex ~= species then
         local national = Pokemon.national(species)
-        local baseSpecies = national and Pokemon.speciesFromNational(national) or nil
-        assert(baseSpecies == cryIndex,
-          ("species %d cry alias %d is not its canonical National Dex species %s")
-            :format(species, cryIndex, tostring(baseSpecies)))
+        local cryNational = Pokemon.national(cryIndex)
+        assert(national and cryNational == national,
+          ("species %d cry alias %d left National Dex family %s -> %s")
+            :format(species, cryIndex, tostring(national), tostring(cryNational)))
         aliases = aliases + 1
       end
       local cry = Audio._pack.index.cries[cryIndex]
