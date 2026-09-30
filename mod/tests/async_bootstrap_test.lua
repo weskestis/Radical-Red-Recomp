@@ -41,9 +41,11 @@ local moduleSources = {
   ["lib/rr_world.lua"] = [[return { run=function() end }]],
   ["lib/rr_encounters.lua"] = [[return {}]],
   ["lib/rr_listmenus.lua"] = [[return { write=function() end }]],
+  ["lib/rr_audio_extract.lua"] = [[return {}]],
   ["lib/rr_extract.lua"] = [[return {
     markerReady=function() return false end,
     ensure=function(mod, profile, opts)
+      assert(type(opts.audioExtractor) == "table")
       _G.__rrAsyncInstalled.extract=true
       opts.onProgress("world_tilesets", 0, 2)
       opts.onProgress("world_tilesets", 1, 2)
