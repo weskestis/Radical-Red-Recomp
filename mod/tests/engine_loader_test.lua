@@ -320,6 +320,7 @@ assert(exports.runtimeReport.expandedCries == true)
 assert(exports.runtimeReport.cryCount == 1376)
 assert(exports.runtimeReport.cryMappedSpecies == 1350)
 assert(exports.runtimeReport.cryReservedSpecies == 25)
+assert((exports.runtimeReport.cryAliasedSpecies or 0) > 0)
 assert(exports.runtimeReport.expandedSongs == true)
 assert(exports.runtimeReport.songCount == 526)
 assert(exports.visualReport.optionsDraw == true)
@@ -532,34 +533,48 @@ do
     return nil
   end
 
-  local mapped, reserved = 0, 0
+  local mapped, reserved, aliases = 0, 0, 0
   local distinctSamples = {}
   for species = 1, 1375 do
-    local cryIndex = Audio._pack.index.cryIds[species]
-    assert(cryIndex == species,
-      ("species %d cry mapped to row %s instead of its RR species row")
-        :format(species, tostring(cryIndex)))
     local stats = Pokemon.stats(species)
     local populated = type(stats) == "table" and (tonumber(stats.hp) or 0) > 0
+    local cryIndex = Audio._pack.index.cryIds[species]
     if populated then
-      local cry = Audio._pack.index.cries[species]
+      assert(type(cryIndex) == "number" and cryIndex >= 1 and cryIndex <= 1375,
+        ("species %d has invalid resolved cry row %s"):format(species, tostring(cryIndex)))
+      if cryIndex ~= species then
+        local national = Pokemon.national(species)
+        local baseSpecies = national and Pokemon.speciesFromNational(national) or nil
+        assert(baseSpecies == cryIndex,
+          ("species %d cry alias %d is not its canonical National Dex species %s")
+            :format(species, cryIndex, tostring(baseSpecies)))
+        aliases = aliases + 1
+      end
+      local cry = Audio._pack.index.cries[cryIndex]
       assert(type(cry) == "table" and cry.sampleId ~= nil,
-        ("species %d has no extracted RR cry sample"):format(species))
+        ("species %d resolved cry row %d has no extracted sample")
+          :format(species, cryIndex))
       local meta = Audio._pack.samples[cry.sampleId]
         or Audio._pack.samples[tostring(cry.sampleId)]
       assert(type(meta) == "table"
           and (tonumber(meta.freq) or 0) > 0
           and (tonumber(meta.size) or 0) > 0,
-        ("species %d cry sample metadata is corrupt"):format(species))
+        ("species %d resolved cry sample metadata is corrupt"):format(species))
       distinctSamples[tostring(cry.sampleId)] = true
       mapped = mapped + 1
     else
+      assert(cryIndex == species,
+        ("reserved species %d unexpectedly remapped to cry row %s")
+          :format(species, tostring(cryIndex)))
       reserved = reserved + 1
     end
   end
   assert(mapped == 1350 and reserved == 25,
     ("complete RR cry census covered %d populated / %d reserved species")
       :format(mapped, reserved))
+  assert(aliases == exports.runtimeReport.cryAliasedSpecies and aliases > 0,
+    ("complete RR cry census reported %d form aliases vs runtime %s")
+      :format(aliases, tostring(exports.runtimeReport.cryAliasedSpecies)))
   assert(next(distinctSamples) ~= nil,
     "complete RR cry census resolved no samples")
 
