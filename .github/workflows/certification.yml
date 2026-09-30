@@ -72,10 +72,6 @@ jobs:
           unzip -q "$archive" -d "$input_dir"
           rm -f "$archive"
 
-      - name: Diagnose zero-HP internal species
-        run: >-
-          python3 -c 'from pathlib import Path; d=Path("'"$RUNNER_TEMP/private-inputs/radical_red_v4_1.gba"'").read_bytes(); b=0x17B98EC; z=[str(i) for i in range(1,1376) if d[b+i*28]==0]; print("ZERO_HP_IDS="+",".join(z)); print("ZERO_HP_COUNT="+str(len(z)))'
-
       - name: Prepare pinned gen1recomp engine
         run: ci/prepare_engine.sh "$RUNNER_TEMP/gen1recomp"
 
