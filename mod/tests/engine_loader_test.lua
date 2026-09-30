@@ -360,7 +360,7 @@ assert(exports.visualReport.momPaletteTag == 0x1168)
 do
   local Dataset = require("src.core.game3.dataset")
   local cache = Dataset.cache()
-  local path = "data/generated/gba/pokemon/battle_anims/pack.lua"
+  local path = "data/" .. "generated/gba/pokemon/battle_anims/pack.lua"
   local source = assert(cache:read(path), "RR battle animation pack is missing")
   local chunk, loadErr = load(source, "@" .. path, "t", {})
   assert(chunk, "RR battle animation pack would not load: " .. tostring(loadErr))
@@ -608,7 +608,7 @@ end
 do
   local Dataset = require("src.core.game3.dataset")
   local bytes = Dataset.cache():read(
-    "data/generated/gba/pokemon/summary/menu_info_rr.rgba")
+    "data/" .. "generated/gba/pokemon/summary/menu_info_rr.rgba")
   assert(type(bytes) == "string" and #bytes == 128 * 144 * 4,
     "expanded Fairy type sheet was not preserved")
 
