@@ -103,7 +103,7 @@ Targets: unmodified gen1recomp 0.3.5 and 0.3.20, mod API 2, FireRed.
   CFRU Fairy badge,
   guarded field-BGM recovery, pre-battle map-song restoration, live Elite Four
   VS-intro identity, damaging pivot moves, the full 1,376-row cry table with
-  all 1,375 internal cry identities with 1,350 populated-species samples and 25 reserved slots excluded,
+  all 1,375 internal cry rows with 1,350 populated species resolving direct or canonical base-species samples and 25 reserved slots excluded,
   CFRU's 526-row song/SFX table, and the full 1,004-move animation pack with
   371 particle rows and 77 animation backgrounds. The exact-ROM animation gate
   audits all 1,004 move pointers, decoded dependency graphs, and referenced SFX.
