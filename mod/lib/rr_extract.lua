@@ -640,7 +640,7 @@ local function writeRrCryIds(cache, Profile)
     table.concat(lines, "\n"))
 end
 
-local function extractExpandedAudio(data, cache, Profile)
+local function extractExpandedAudio(data, cache, Profile, progress)
   assert(type(data) == "string" and #data == Profile.ROM_SIZE,
     "Radical Red expanded audio extraction needs the complete validated ROM")
   local ptr = leU32(data, assert(Profile.OFFSET.cryTablePointerSlot))
@@ -678,7 +678,36 @@ local function extractExpandedAudio(data, cache, Profile)
   -- extract_audio captures these counts when its module is first required.
   -- Restamp it in case another launcher path loaded the module before RR.
   ExtractAudio.CRY_COUNT = Profile.SPECIES_COUNT
-  local ok, indexOrErr = ExtractAudio.run({ data = data }, cache, {
+
+  -- The pinned host extractor has no progress callback. During first-launch
+  -- conversion it can otherwise hold one coroutine resume for several seconds
+  -- while writing hundreds of song/audio cache files. Proxy cache writes and
+  -- report a checkpoint every small batch; cached/upgrade paths can omit the
+  -- callback and remain synchronous.
+  local audioCache = cache
+  if progress then
+    local writes = 0
+    local proxy = {}
+    function proxy:write(path, bytes)
+      local ok, err = cache:write(path, bytes)
+      writes = writes + 1
+      if writes % 8 == 0 then
+        progress("rom_assets_audio", writes, Profile.AUDIO_SONG_COUNT)
+      end
+      return ok, err
+    end
+    audioCache = setmetatable(proxy, {
+      __index = function(_, key)
+        local value = cache[key]
+        if type(value) ~= "function" then return value end
+        return function(_, ...)
+          return value(cache, ...)
+        end
+      end,
+    })
+  end
+
+  local ok, indexOrErr = ExtractAudio.run({ data = data }, audioCache, {
     sha1 = Profile.SHA1,
     root = Profile.extractRoot() .. "/audio",
   })
@@ -752,7 +781,7 @@ local function runGraphicalAssets(adapter, cache, Profile, progress)
   progress("rom_assets", 2, 3)
 
   if not audioReady then
-    extractExpandedAudio(data, cache, Profile)
+    extractExpandedAudio(data, cache, Profile, progress)
   end
   progress("rom_assets", 3, 3)
 
