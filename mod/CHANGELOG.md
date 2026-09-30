@@ -35,8 +35,8 @@
   repointed tables. The cache now extracts all **1,376 cry ToneData rows** plus
   the full **526-row song/SFX table**. Runtime and exact-ROM gates census all
   **1,375 internal species rows**, requiring valid direct cry samples or same-National-Dex
-  family aliases for the **1,350 populated species** while excluding
-  the 25 reserved FireRed internal slots; modern playback
+  family aliases for the **1,348 populated species** while excluding
+  the 27 zero-HP internal slots (252–276, Egg 412, and Palkia Primal 920); modern playback
   sentinels still exercise the host voice path.
 - Follow CFRU's repointed battle-animation tables and extract all **1,004 move
   scripts**, **371 particle rows**, and **77 animation backgrounds**. The
