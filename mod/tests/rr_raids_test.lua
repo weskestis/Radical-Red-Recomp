@@ -171,6 +171,8 @@ function ItemsData.displayName(id) return "ITEM_" .. id end
 function ItemsData.fieldUseKind() return "none" end
 function ItemsData.isBerry() return false end
 
+local raidRandomNumberProvider = function() return 0 end
+
 local deps = {
   Natives = Natives, Flags = Flags, Pokemon = Pokemon,
   Party = { healAll = function() end },
@@ -190,7 +192,7 @@ local deps = {
   Rng = { Random = function() return 0 end, Random32 = function() return 0 end },
   bit = require("bit"),
   getSession = function() return session end,
-  raidRandomNumber = function() return 0 end,
+  raidRandomNumber = function(ctx) return raidRandomNumberProvider(ctx) end,
   random16 = function() return 0 end,
   random32 = function() return 0 end,
   skipBattleHooks = true,
@@ -316,7 +318,7 @@ assert(store.flags[0x1800 + MAP_INDEX] == true)
 -- clears the done flag, and advances RR's deterministic raid-number offset.
 -- Feed the offset into the stable number so this proves the reroll itself,
 -- rather than only checking that the variable changed.
-deps.raidRandomNumber = function()
+raidRandomNumberProvider = function()
   return var(Raids.VAR.RAID_NUMBER_OFFSET)
 end
 session.bag[195] = 0
@@ -389,7 +391,7 @@ assert(not store.flags[0x1800 + MAP_INDEX])
 
 -- Restore the fixed facility fixture after the Wishing Piece tests above used
 -- the live reroll offset as the stable raid number.
-deps.raidRandomNumber = function() return 0 end
+raidRandomNumberProvider = function() return 0 end
 
 -- Battle-facility raids use the Frontier spread pools even if the map's raid
 -- descriptor is absent.  This was the path that previously claimed a den was
