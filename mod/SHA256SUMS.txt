@@ -4,7 +4,7 @@ d495b872866eec1eb10f9e4db2e56e5333830cd5e79e09bdedfa7a930f126843  ./docs/CHECKPO
 5b5c05e59108bc15b6fb6e59f3b6b863861e7d1d7a813b2ee97863fce1da9a67  ./docs/PORTING_MATRIX.md
 28df222978c1fad7d1a018fb94497d432e3f29dbcddcf23b5ace307339b99334  ./lib/rr_battle.lua
 c6d952f568aa4921fd415bf6c0ab9252576a7ebafccf480d558cc92f7a958f09  ./lib/rr_encounters.lua
-b7ebffee0b706491156f2dc1a54a1218cf7b192b3912dcbcf8cad0e4cf73bfde  ./lib/rr_extract.lua
+fb9699e56756aec2a68e8027878007af3ed93b02b4dd3cc26cacdc0ed89e9b1a  ./lib/rr_extract.lua
 718577e94b70c22ce1bcc8bf8ad6ff4519690844395210f23b64f49d571b807b  ./lib/rr_facilities.lua
 833a5038ca42b6e43b581eacb5ab0dba83d62e3ce95079cb0506636c7a093045  ./lib/rr_listmenus.lua
 bcec23c23e1cc21415a5223ffba863f499b0e2056b9e3737050fbf325a597097  ./lib/rr_mechanics.lua
