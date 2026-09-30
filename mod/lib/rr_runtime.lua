@@ -689,11 +689,15 @@ local function installSaveTransferBridge(Profile)
   local originalRefreshSlots = RomImporter._refreshSlots
   RomImporter._refreshSlots = function(self, scope)
     if rrEnabled(scope) then
-      self.slots[scope] = SaveData.listCartSlots(CART_ID) or {}
+      local slots = SaveData.listCartSlots(CART_ID) or {}
+      self.slots[scope] = slots
       local opts = SaveData.loadOptions()
       local reg = opts.cartSlots and opts.cartSlots[CART_ID]
-      self.activeSlot[scope] =
-        reg and (reg.active or (reg.list and reg.list[1])) or nil
+      local active = reg and (reg.active or (reg.list and reg.list[1])) or nil
+      if active == nil and type(slots[1]) == "table" then
+        active = slots[1].id
+      end
+      self.activeSlot[scope] = active
       return
     end
     return originalRefreshSlots(self, scope)
@@ -907,12 +911,25 @@ function Runtime.install(mod, Profile, RR_Encounters)
     ("Radical Red song/SFX pack has %s/%d rows")
       :format(tostring(Audio._pack.index.songCount), Profile.AUDIO_SONG_COUNT))
 
-  -- Validate every internal identity row, but require an extracted sample only
-  -- for populated species. RR retains FireRed's 25 reserved internal slots
-  -- (252..276); those zero-stat rows are not playable and intentionally have
-  -- no cry sample.
+  -- Validate every internal identity row. Populated forms without standalone
+  -- ToneData reuse the canonical National Dex species cry, matching DPE's
+  -- form/base-species behavior. RR also retains FireRed's 25 reserved internal
+  -- slots (252..276); those zero-stat rows are not playable and need no sample.
   local Pokemon = require("src.core.game3.pokemon")
-  local cryMappedSpecies, cryReservedSpecies = 0, 0
+  local function validCrySample(cryIndex)
+    local cry = Audio._pack.index.cries[cryIndex]
+    if type(cry) ~= "table" or cry.sampleId == nil then return nil end
+    local sample = Audio._pack.samples[cry.sampleId]
+      or Audio._pack.samples[tostring(cry.sampleId)]
+    if type(sample) ~= "table"
+        or (tonumber(sample.freq) or 0) <= 0
+        or (tonumber(sample.size) or 0) <= 0 then
+      return nil
+    end
+    return sample
+  end
+
+  local cryMappedSpecies, cryReservedSpecies, cryAliasedSpecies = 0, 0, 0
   for species = 1, Profile.SPECIES_COUNT - 1 do
     assert(cryIds[species] == species,
       ("Radical Red cry-id map changed species %d to row %s")
@@ -920,15 +937,22 @@ function Runtime.install(mod, Profile, RR_Encounters)
     local stats = Pokemon.stats(species)
     local populated = type(stats) == "table" and (tonumber(stats.hp) or 0) > 0
     if populated then
-      local cry = Audio._pack.index.cries[species]
-      assert(type(cry) == "table" and cry.sampleId ~= nil,
-        ("Radical Red species %d has no extracted cry sample"):format(species))
-      local sample = Audio._pack.samples[cry.sampleId]
-        or Audio._pack.samples[tostring(cry.sampleId)]
-      assert(type(sample) == "table"
-          and (tonumber(sample.freq) or 0) > 0
-          and (tonumber(sample.size) or 0) > 0,
-        ("Radical Red species %d has invalid cry sample metadata"):format(species))
+      local cryIndex = species
+      local sample = validCrySample(cryIndex)
+      if not sample then
+        local national = Pokemon.national(species)
+        local baseSpecies = national and Pokemon.speciesFromNational(national) or nil
+        assert(baseSpecies and baseSpecies ~= species,
+          ("Radical Red species %d has no standalone cry or canonical base species")
+            :format(species))
+        sample = validCrySample(baseSpecies)
+        assert(sample,
+          ("Radical Red species %d canonical cry %d has no valid sample")
+            :format(species, baseSpecies))
+        cryIndex = baseSpecies
+        cryIds[species] = baseSpecies
+        cryAliasedSpecies = cryAliasedSpecies + 1
+      end
       cryMappedSpecies = cryMappedSpecies + 1
     else
       cryReservedSpecies = cryReservedSpecies + 1
@@ -961,6 +985,7 @@ function Runtime.install(mod, Profile, RR_Encounters)
     cryCount = Audio._pack.index.cryCount,
     cryMappedSpecies = cryMappedSpecies,
     cryReservedSpecies = cryReservedSpecies,
+    cryAliasedSpecies = cryAliasedSpecies,
     expandedSongs = true,
     songCount = Audio._pack.index.songCount,
     expandedScriptVars = expandedScriptVars,
