@@ -144,7 +144,7 @@
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4695,
-      "sha256": "816cfa1f703f0d6148658cf73a9efe8b9a6065f6048f4323e7b6f596b55cd445"
+      "sha256": "1f54ca545631fd5cbec965d312a3bc7df3c0767018085c5a81b2959658732b46"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
@@ -203,8 +203,8 @@
     },
     {
       "path": "tests/rr_raids_test.lua",
-      "bytes": 15444,
-      "sha256": "72132245b749232616bab6713d01adec2173079c29fdf8ed359635df25eefe3d"
+      "bytes": 15539,
+      "sha256": "0b6068b2c4c30517f3a93beb833b719d16804e47238fa1b34da06951588e62f6"
     },
     {
       "path": "tests/rr_randomizer_test.lua",
@@ -214,7 +214,7 @@
     {
       "path": "tests/rr_rom_test.lua",
       "bytes": 6635,
-      "sha256": "3a2e1040fbfadc9de40cde9246aaa6eede02a01a6449b4cf4dcd29fe68bdc16b"
+      "sha256": "bde83fdafd2d0fe300009fc9f90678db7f216638a8bd866f61f4be721ca90d56"
     },
     {
       "path": "tests/rr_save_transfer_test.lua",
