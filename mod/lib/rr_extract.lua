@@ -708,65 +708,30 @@ local function extractExpandedAudio(data, cache, Profile, progress)
   end
 
   -- The extractor's final table serialization happens before cache:write(),
-  -- so write-based checkpoints alone cannot split that CPU-heavy phase. The
-  -- engine commit is pinned; temporarily replace only its private serializer
-  -- upvalue with an output-equivalent version that checkpoints every 64 table
-  -- entries, then restore the original immediately after the call.
-  local encodeUpvalue, originalEncode
-  if progress and debug and debug.getupvalue and debug.setupvalue then
-    for i = 1, 64 do
-      local name, value = debug.getupvalue(ExtractAudio.run, i)
-      if not name then break end
-      if name == "encode_lua_table" and type(value) == "function" then
-        encodeUpvalue, originalEncode = i, value
-        break
-      end
-    end
-  end
-
-  if encodeUpvalue then
-    local encodedEntries = 0
-    local function yieldingEncode(tbl, indent)
-      indent = indent or ""
-      local parts = { "{\n" }
-      local keys = {}
-      for k in pairs(tbl) do keys[#keys + 1] = k end
-      table.sort(keys, function(a, b)
-        local ta, tb = type(a), type(b)
-        if ta == tb and ta == "number" then return a < b end
-        if ta == "number" then return true end
-        if tb == "number" then return false end
-        return tostring(a) < tostring(b)
-      end)
-      for _, k in ipairs(keys) do
-        local v = tbl[k]
-        local ks = type(k) == "number" and ("[%s]"):format(k)
-          or ("[%q]"):format(tostring(k))
-        if type(v) == "table" then
-          parts[#parts + 1] = indent .. "  " .. ks .. " = "
-            .. yieldingEncode(v, indent .. "  ") .. ",\n"
-        elseif type(v) == "string" then
-          parts[#parts + 1] = indent .. "  " .. ks .. " = "
-            .. string.format("%q", v) .. ",\n"
-        elseif type(v) == "boolean" then
-          parts[#parts + 1] = indent .. "  " .. ks .. " = "
-            .. tostring(v) .. ",\n"
-        elseif type(v) == "number" then
-          parts[#parts + 1] = indent .. "  " .. ks .. " = "
-            .. tostring(v) .. ",\n"
-        elseif v == nil then
-          parts[#parts + 1] = indent .. "  " .. ks .. " = nil,\n"
+  -- so write-based checkpoints alone cannot split that CPU-heavy phase.
+  -- Temporarily wrap pairs() while this extraction coroutine is active. The
+  -- wrapper is semantics-preserving for other callers and checkpoints only
+  -- when iteration belongs to this exact coroutine.
+  local originalPairs = pairs
+  local extractionCoroutine = coroutine.running()
+  local iteratedEntries = 0
+  local pairsWrapped = progress ~= nil and extractionCoroutine ~= nil
+  if pairsWrapped then
+    _G.pairs = function(tbl)
+      local iter, state, key = originalPairs(tbl)
+      local function nextPair(st, current)
+        local nextKey, value = iter(st, current)
+        if nextKey ~= nil and coroutine.running() == extractionCoroutine then
+          iteratedEntries = iteratedEntries + 1
+          if iteratedEntries % 64 == 0 then
+            progress("rom_assets_audio_serialize", iteratedEntries,
+              iteratedEntries + 64)
+          end
         end
-        encodedEntries = encodedEntries + 1
-        if encodedEntries % 64 == 0 then
-          progress("rom_assets_audio_encode", encodedEntries,
-            Profile.SPECIES_COUNT + Profile.AUDIO_SONG_COUNT)
-        end
+        return nextKey, value
       end
-      parts[#parts + 1] = indent .. "}"
-      return table.concat(parts)
+      return nextPair, state, key
     end
-    debug.setupvalue(ExtractAudio.run, encodeUpvalue, yieldingEncode)
   end
 
   local callOk, ok, indexOrErr = pcall(ExtractAudio.run,
@@ -774,9 +739,7 @@ local function extractExpandedAudio(data, cache, Profile, progress)
       sha1 = Profile.SHA1,
       root = Profile.extractRoot() .. "/audio",
     })
-  if encodeUpvalue then
-    debug.setupvalue(ExtractAudio.run, encodeUpvalue, originalEncode)
-  end
+  if pairsWrapped then _G.pairs = originalPairs end
   assert(callOk, "Radical Red audio extractor crashed: " .. tostring(ok))
   assert(ok, "Radical Red audio extraction failed: " .. tostring(indexOrErr))
   local index = assert(indexOrErr, "Radical Red audio extractor returned no index")
