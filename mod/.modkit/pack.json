@@ -13,13 +13,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 24008,
-      "sha256": "04cd8f1f344f34ba304476946af46a099b1d051bf3539a0e0da25acff4d088e8"
+      "bytes": 24032,
+      "sha256": "85772f14c10e59eb383a995f36b9e039f4ff82165e1d1bda9ee5250aebbb8bd9"
     },
     {
       "path": "docs/CHECKPOINT_STATUS.md",
-      "bytes": 11034,
-      "sha256": "abe621baa66afb2345a01b974b3a61ba001438dc0924e07db48bae8d58357383"
+      "bytes": 11044,
+      "sha256": "d495b872866eec1eb10f9e4db2e56e5333830cd5e79e09bdedfa7a930f126843"
     },
     {
       "path": "docs/PORTING_MATRIX.md",
@@ -88,8 +88,8 @@
     },
     {
       "path": "lib/rr_runtime.lua",
-      "bytes": 38601,
-      "sha256": "b724ce307661f93a7496be41321967ab725104ff55e8fc08152ce73220c6207a"
+      "bytes": 39253,
+      "sha256": "6b2a205b92531d7bea27f91c6072db6ec75cdb710d354d9b2ccb06cf4b81a4fa"
     },
     {
       "path": "lib/rr_story.lua",
@@ -138,13 +138,13 @@
     },
     {
       "path": "reports/VERIFICATION.md",
-      "bytes": 7969,
-      "sha256": "9f26f5a0ec5c45cefb6f6952329442da50994b0183f05bf71ab1a0a1bb413ca2"
+      "bytes": 7979,
+      "sha256": "8c80185331b87686b52e56403df3195c08e56aa1fff2a4aac976edd5a748cb23"
     },
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4695,
-      "sha256": "7fb5b744d5ad6320fed710316efbbbb1d5e32f0cb3dd6a3daf835737f549470c"
+      "sha256": "6a5b202dbab91d6e55c2b30fad60707d49c7cc377ded991a0d708a1452a3253a"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
@@ -163,8 +163,8 @@
     },
     {
       "path": "tests/engine_loader_test.lua",
-      "bytes": 89844,
-      "sha256": "19992ece73d61012531effa5936efd821276aed70b00a70d1b20516be9fd0770"
+      "bytes": 89835,
+      "sha256": "cfb92d6c31911d25839ce287c6d21061ee400dfddccc724d6c5976427879163c"
     },
     {
       "path": "tests/main_overlay_test.lua",
@@ -213,8 +213,8 @@
     },
     {
       "path": "tests/rr_rom_test.lua",
-      "bytes": 7699,
-      "sha256": "0ba9b6a6bf04a00f1f0a0c72bdf145fd27f6670c15971f9e8c79124bf9ec578f"
+      "bytes": 7360,
+      "sha256": "e3a269fb66d6f4373322bb7aeaaae5c99a5ec6f151ba3941c208664176ce77fa"
     },
     {
       "path": "tests/rr_save_transfer_test.lua",
