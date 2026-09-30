@@ -87,7 +87,7 @@ return function(mod)
 
     collectgarbage("collect")
     step("runtime", 0, 9)
-    reports.runtime = Runtime.install(mod, Profile, Encounters)
+    reports.runtime = Runtime.install(mod, Profile, Encounters, onProgress)
     reports.visuals = Visuals.installRuntime(Profile)
     for key, value in pairs(visualProfile) do reports.visuals[key] = value end
     local paletteReport = Visuals.report()
