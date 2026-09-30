@@ -35,6 +35,32 @@ jobs:
       - name: Prepare pinned gen1recomp engine
         run: ci/prepare_engine.sh "$RUNNER_TEMP/gen1recomp"
 
+      - name: Diagnose Wishing Piece transaction
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          src = Path("mod/tests/rr_raids_test.lua").read_text()
+          needle = """call(Raids.SPECIAL.INTRO, adapters)
+local rerolledOffset = (beforeOffset + 1) % 0x10000
+assert(session.bag[195] == 0"""
+          repl = """call(Raids.SPECIAL.INTRO, adapters)
+local rerolledOffset = (beforeOffset + 1) % 0x10000
+print(("WISHING_DIAG bag=%s flag=%s offset=%s expected=%s stable=%s beforeStable=%s")
+  :format(tostring(session.bag[195]),
+    tostring(store.flags[0x1800 + MAP_INDEX]),
+    tostring(var(Raids.VAR.RAID_NUMBER_OFFSET)),
+    tostring(rerolledOffset),
+    tostring(Raids._state.stable),
+    tostring(beforeStable)))
+assert(session.bag[195] == 0"""
+          if needle not in src:
+              raise SystemExit("diagnostic injection target not found")
+          Path("/tmp/rr_raids_diag.lua").write_text(src.replace(needle, repl, 1))
+          PY
+          cd "$RUNNER_TEMP/gen1recomp"
+          luajit /tmp/rr_raids_diag.lua
+
       - name: Run ROM-free certification
         run: ci/run_rom_free.sh "$RUNNER_TEMP/gen1recomp"
 
