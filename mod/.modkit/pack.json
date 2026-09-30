@@ -27,6 +27,11 @@
       "sha256": "5b5c05e59108bc15b6fb6e59f3b6b863861e7d1d7a813b2ee97863fce1da9a67"
     },
     {
+      "path": "lib/rr_audio_extract.lua",
+      "bytes": 24767,
+      "sha256": "a41615230599f396c0af742fd4b457cd1285fe1f06f2af7c9dc0e31b669923b3"
+    },
+    {
       "path": "lib/rr_battle.lua",
       "bytes": 15858,
       "sha256": "28df222978c1fad7d1a018fb94497d432e3f29dbcddcf23b5ace307339b99334"
@@ -38,8 +43,8 @@
     },
     {
       "path": "lib/rr_extract.lua",
-      "bytes": 45676,
-      "sha256": "fb9699e56756aec2a68e8027878007af3ed93b02b4dd3cc26cacdc0ed89e9b1a"
+      "bytes": 44283,
+      "sha256": "8dd5f644d0b41437bb817e4e9795c6109c51bc2e7f6dec8a3ae0ded81e6b5496"
     },
     {
       "path": "lib/rr_facilities.lua",
@@ -113,8 +118,8 @@
     },
     {
       "path": "main.lua",
-      "bytes": 13355,
-      "sha256": "d07dcda76f32c278536844155797fbce5d122f0fb30ca3dce9710a6bc4a653a8"
+      "bytes": 13458,
+      "sha256": "a09ff21dc177a3c266d443bfa984ee783e3b1c93c4b5f81481f5eec7ce05aef5"
     },
     {
       "path": "manifest.json",
@@ -143,8 +148,8 @@
     },
     {
       "path": "SHA256SUMS.txt",
-      "bytes": 4695,
-      "sha256": "c40c3b3ba6abed4bc63108e8adaaa3ea469f643f65a391289e76b4433ec28cdc"
+      "bytes": 4788,
+      "sha256": "8417d225725a7d47060f0ec3ab1deaba7b560d13a7be5418a5151e116f7e5e7c"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
