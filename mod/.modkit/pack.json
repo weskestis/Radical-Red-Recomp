@@ -13,13 +13,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 23992,
-      "sha256": "b7ede72d52aac3ee9919451a2ec0c10e58353a454032f59b87913861ccc1df4c"
+      "bytes": 24008,
+      "sha256": "04cd8f1f344f34ba304476946af46a099b1d051bf3539a0e0da25acff4d088e8"
     },
     {
       "path": "docs/CHECKPOINT_STATUS.md",
-      "bytes": 10997,
-      "sha256": "414b8e943ee8d66871d2c1b182d3a45dc9b86e29b878559057bc9dc8d070cbc4"
+      "bytes": 11034,
+      "sha256": "abe621baa66afb2345a01b974b3a61ba001438dc0924e07db48bae8d58357383"
     },
     {
       "path": "docs/PORTING_MATRIX.md",
@@ -88,8 +88,8 @@
     },
     {
       "path": "lib/rr_runtime.lua",
-      "bytes": 37681,
-      "sha256": "6bca2978aeb8f414bde11b271982d4d6e4bdd77d0b2d7f0ae6b5c80eb345694f"
+      "bytes": 38601,
+      "sha256": "b724ce307661f93a7496be41321967ab725104ff55e8fc08152ce73220c6207a"
     },
     {
       "path": "lib/rr_story.lua",
@@ -138,13 +138,13 @@
     },
     {
       "path": "reports/VERIFICATION.md",
-      "bytes": 7970,
-      "sha256": "b82653dc7f47520980918ee5aba880472d9a93aa4bc304377a33ca1410c653fe"
+      "bytes": 7969,
+      "sha256": "9f26f5a0ec5c45cefb6f6952329442da50994b0183f05bf71ab1a0a1bb413ca2"
     },
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4695,
-      "sha256": "3789b9f8eaae5a412575cde7c8fd29d9be499ba0b6f8d36a6669a07842b8d363"
+      "sha256": "275697cba71cc00bc6ced5062e4b90c47f409dab4078b3e4f25e60a858c2c94c"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
@@ -163,8 +163,8 @@
     },
     {
       "path": "tests/engine_loader_test.lua",
-      "bytes": 88926,
-      "sha256": "fbd32c3361e36c1a4a0a9eee2ddc1ff215aea9e3f823e7db157e547cfb41a27c"
+      "bytes": 89832,
+      "sha256": "6d3de9952957dc9229abaf4cdc337fe9ca4176b93388b4165edfd4118082287e"
     },
     {
       "path": "tests/main_overlay_test.lua",
