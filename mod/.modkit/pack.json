@@ -13,13 +13,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 23933,
-      "sha256": "b6898736dd3ac041849e9ff71f9229742f18de6977f00b8ba2689f56484b0c6f"
+      "bytes": 23992,
+      "sha256": "b7ede72d52aac3ee9919451a2ec0c10e58353a454032f59b87913861ccc1df4c"
     },
     {
       "path": "docs/CHECKPOINT_STATUS.md",
-      "bytes": 10949,
-      "sha256": "b76087f6808d46b09e7763887a625ec0f2dbf987f8ae1e03ee9205f53449a33d"
+      "bytes": 10997,
+      "sha256": "414b8e943ee8d66871d2c1b182d3a45dc9b86e29b878559057bc9dc8d070cbc4"
     },
     {
       "path": "docs/PORTING_MATRIX.md",
@@ -88,8 +88,8 @@
     },
     {
       "path": "lib/rr_runtime.lua",
-      "bytes": 37294,
-      "sha256": "02fe635cc5aeacff1173f760da07c30edafea08c69b1e79372c0b8eaae828ce7"
+      "bytes": 37681,
+      "sha256": "6bca2978aeb8f414bde11b271982d4d6e4bdd77d0b2d7f0ae6b5c80eb345694f"
     },
     {
       "path": "lib/rr_story.lua",
@@ -138,13 +138,13 @@
     },
     {
       "path": "reports/VERIFICATION.md",
-      "bytes": 7909,
-      "sha256": "ec3480413dc0c549b31622cf3140d0c886ee39b76e12c3cdea54c7e615342921"
+      "bytes": 7970,
+      "sha256": "b82653dc7f47520980918ee5aba880472d9a93aa4bc304377a33ca1410c653fe"
     },
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4695,
-      "sha256": "e0a2065138780baec4edb1abd5000152a57f67dbd92ed912b3efbad612e3f62b"
+      "sha256": "3789b9f8eaae5a412575cde7c8fd29d9be499ba0b6f8d36a6669a07842b8d363"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
@@ -163,8 +163,8 @@
     },
     {
       "path": "tests/engine_loader_test.lua",
-      "bytes": 88592,
-      "sha256": "382f91fad4bc2382a591e4761984d1c666ec4fd26df2a71aaddba1c289e84305"
+      "bytes": 88926,
+      "sha256": "fbd32c3361e36c1a4a0a9eee2ddc1ff215aea9e3f823e7db157e547cfb41a27c"
     },
     {
       "path": "tests/main_overlay_test.lua",
@@ -228,8 +228,8 @@
     },
     {
       "path": "tests/stream_rom_compat_test.lua",
-      "bytes": 6834,
-      "sha256": "a69370970c9dd682def494ede48483b6a3e60d522f92d8246c756f8e9ac632be"
+      "bytes": 6865,
+      "sha256": "899b91fdb819501e2bb5a08a117f092dec9a647d0570a1415c0b9ffc4ba0b19a"
     },
     {
       "path": "tests/vanilla_off_test.lua",
