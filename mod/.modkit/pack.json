@@ -43,8 +43,8 @@
     },
     {
       "path": "lib/rr_extract.lua",
-      "bytes": 44283,
-      "sha256": "8dd5f644d0b41437bb817e4e9795c6109c51bc2e7f6dec8a3ae0ded81e6b5496"
+      "bytes": 44404,
+      "sha256": "c4cc5845b609375af0087fae144d901a238c5bc6c053b38e2112268e23b87440"
     },
     {
       "path": "lib/rr_facilities.lua",
@@ -149,12 +149,12 @@
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4788,
-      "sha256": "8417d225725a7d47060f0ec3ab1deaba7b560d13a7be5418a5151e116f7e5e7c"
+      "sha256": "143a84a411ae57a21872ebde56344d61eaa4ba74a1692d7d093613becd9faa5f"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
-      "bytes": 7605,
-      "sha256": "9ccc37944eaff02f8726e048d0a86705bdf9e95aa8060bc82e837e150c362d5e"
+      "bytes": 7704,
+      "sha256": "1656a598dbe6dfcc924a0f6dafa6792f2408debb429e17990f07eaf7caa4ced3"
     },
     {
       "path": "tests/battle_damage_test.lua",
@@ -173,8 +173,8 @@
     },
     {
       "path": "tests/main_overlay_test.lua",
-      "bytes": 7937,
-      "sha256": "50bbe22bb1a30b29c0ba6478c42757b21bcd0a5054ef7a4a46059b48f2317be9"
+      "bytes": 8034,
+      "sha256": "c17af6d3f617009b6a30d4d7640653aeaaa364a69996aafacaa2da8ca9ecca8b"
     },
     {
       "path": "tests/rr_battle_test.lua",
