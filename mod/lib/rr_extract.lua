@@ -712,13 +712,16 @@ local function extractExpandedAudio(data, cache, Profile, progress)
   -- Temporarily wrap pairs() while this extraction coroutine is active. The
   -- wrapper is semantics-preserving for other callers and checkpoints only
   -- when iteration belongs to this exact coroutine.
-  local originalPairs = pairs
   local extractionCoroutine = coroutine.running()
+  local extractEnv = getfenv and getfenv(ExtractAudio.run) or nil
+  local originalEnvPairs = extractEnv and rawget(extractEnv, "pairs") or nil
+  local basePairs = extractEnv and extractEnv.pairs or pairs
   local iteratedEntries = 0
   local pairsWrapped = progress ~= nil and extractionCoroutine ~= nil
+    and type(extractEnv) == "table" and type(basePairs) == "function"
   if pairsWrapped then
-    _G.pairs = function(tbl)
-      local iter, state, key = originalPairs(tbl)
+    extractEnv.pairs = function(tbl)
+      local iter, state, key = basePairs(tbl)
       local function nextPair(st, current)
         local nextKey, value = iter(st, current)
         if nextKey ~= nil and coroutine.running() == extractionCoroutine then
@@ -739,7 +742,7 @@ local function extractExpandedAudio(data, cache, Profile, progress)
       sha1 = Profile.SHA1,
       root = Profile.extractRoot() .. "/audio",
     })
-  if pairsWrapped then _G.pairs = originalPairs end
+  if pairsWrapped then extractEnv.pairs = originalEnvPairs end
   assert(callOk, "Radical Red audio extractor crashed: " .. tostring(ok))
   assert(ok, "Radical Red audio extraction failed: " .. tostring(indexOrErr))
   local index = assert(indexOrErr, "Radical Red audio extractor returned no index")
