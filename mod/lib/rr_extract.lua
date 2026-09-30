@@ -481,11 +481,40 @@ end
 local function extractExpandedBattleAnims(rom, cache, Profile)
   local tables = configureExpandedBattleAnims(rom, Profile)
   local BattleAnimExtract = require("src.import.gba.battle_anim_extract")
-  local report = assert(BattleAnimExtract.run(rom, cache, {
+
+  -- The expanded 1,004-move pack writes hundreds of RGBA/indexed PNG pairs.
+  -- Release completed decode buffers and streamed ROM pages throughout the pass
+  -- so first-launch conversion stays inside Android's tighter memory ceiling.
+  if rom.clearCache then rom:clearCache() end
+  collectgarbage("collect")
+  local writes = 0
+  local boundedCache = {}
+  function boundedCache:write(path, body)
+    local ok, err = cache:write(path, body)
+    writes = writes + 1
+    if writes % 2 == 0 then
+      if rom.clearCache then rom:clearCache() end
+      collectgarbage("collect")
+    end
+    return ok, err
+  end
+  setmetatable(boundedCache, {
+    __index = function(_, key)
+      local value = cache[key]
+      if type(value) ~= "function" then return value end
+      return function(_, ...)
+        return value(cache, ...)
+      end
+    end,
+  })
+
+  local report = assert(BattleAnimExtract.run(rom, boundedCache, {
     cacheRoot = Profile.extractRoot(),
     force = true,
     strict = false,
   }))
+  if rom.clearCache then rom:clearCache() end
+  collectgarbage("collect")
   assert(report.moveCount == Profile.MOVE_COUNT,
     ("Radical Red battle animation extraction decoded %s/%d moves")
       :format(tostring(report.moveCount), Profile.MOVE_COUNT))
