@@ -151,11 +151,14 @@ local AnimProfile = {
   BATTLE_ANIM_BG_COUNT = 77,
 }
 local fullAnim = {
-  moves = { [0] = { { op = "end" } }, [1003] = { { op = "end" } } },
+  moves = {},
   labels = { sentinel = { { op = "end" } } },
   tagPals = {},
   animBgs = {},
 }
+for i = 0, AnimProfile.MOVE_COUNT - 1 do
+  fullAnim.moves[i] = { { op = "end" } }
+end
 for i = 0, 370 do fullAnim.tagPals["TAG_" .. i] = {} end
 for i = 0, 76 do fullAnim.animBgs[i] = { file = tostring(i) .. ".png" } end
 assert(Extractor.expandedBattleAnimPackReady(fullAnim, AnimProfile),
