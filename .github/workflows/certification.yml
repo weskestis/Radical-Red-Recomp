@@ -35,14 +35,6 @@ jobs:
       - name: Prepare pinned gen1recomp engine
         run: ci/prepare_engine.sh "$RUNNER_TEMP/gen1recomp"
 
-      - name: Diagnose Wishing Piece transaction
-        continue-on-error: true
-        run: |
-          cp mod/tests/rr_raids_test.lua /tmp/rr_raids_diag.lua
-          python3 -c 'from pathlib import Path; p=Path("/tmp/rr_raids_diag.lua"); s=p.read_text(); n="local rerolledOffset = (beforeOffset + 1) % 0x10000"; d=n+"\nprint((\"WISHING_DIAG bag=%s flag=%s offset=%s expected=%s stable=%s beforeStable=%s\"):format(tostring(session.bag[195]), tostring(store.flags[0x1800 + MAP_INDEX]), tostring(var(Raids.VAR.RAID_NUMBER_OFFSET)), tostring(rerolledOffset), tostring(Raids._state.stable), tostring(beforeStable)))"; assert n in s; p.write_text(s.replace(n,d,1))'
-          cd "$RUNNER_TEMP/gen1recomp"
-          luajit /tmp/rr_raids_diag.lua
-
       - name: Run ROM-free certification
         run: ci/run_rom_free.sh "$RUNNER_TEMP/gen1recomp"
 
