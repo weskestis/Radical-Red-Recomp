@@ -821,8 +821,12 @@ local function installSaveTransferBridge(Profile)
   return true
 end
 
-function Runtime.install(mod, Profile, RR_Encounters)
+function Runtime.install(mod, Profile, RR_Encounters, onProgress)
   assert(mod and mod.game, "Radical Red requires the live Game3 service")
+  local function runtimeProgress(cur, total)
+    if onProgress then onProgress("runtime_dataset", cur, total) end
+  end
+  runtimeProgress(0, 4)
   local Versions = require("src.import.gba.versions")
   Profile.apply(Versions)
   local overlay = installCacheOverlay(mod, Profile)
@@ -869,6 +873,7 @@ function Runtime.install(mod, Profile, RR_Encounters)
   assert(croppedLayouts == 306,
     "Radical Red runtime odd-layout census changed: " .. tostring(croppedLayouts))
   local cache = Dataset.cache()
+  runtimeProgress(1, 4)
 
   local ItemsData = require("src.core.game3.items_data")
   ItemsData.install(cache)
@@ -890,6 +895,7 @@ function Runtime.install(mod, Profile, RR_Encounters)
   local Audio = require("src.core.game3.audio")
   local okAudio, audioErr = Audio.install(cache, { root = physicalRoot .. "/audio" })
   assert(okAudio, "Radical Red audio pack failed to install: " .. tostring(audioErr))
+  runtimeProgress(2, 4)
 
   -- The stock host's FireRed pack only knows cries for the original species
   -- range. RR's extraction writes a separate map because DPE's expanded
@@ -982,6 +988,7 @@ function Runtime.install(mod, Profile, RR_Encounters)
     ("Radical Red cry census changed: %d populated / %d reserved")
       :format(cryMappedSpecies, cryReservedSpecies))
   Audio._pack.index.cryIds = cryIds
+  runtimeProgress(3, 4)
 
   installChrome(cache)
   local Help = require("src.ui.game3.help_system")
@@ -991,6 +998,7 @@ function Runtime.install(mod, Profile, RR_Encounters)
   if QuestLog.install then QuestLog.install(cache) end
 
   if mod.game._exposeModData then mod.game:_exposeModData() end
+  runtimeProgress(4, 4)
 
   return {
     root = physicalRoot,
