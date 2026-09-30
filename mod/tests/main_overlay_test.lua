@@ -43,10 +43,12 @@ local moduleSources = {
     end,
     report=function() return { usedPaletteCount=397 } end,
   }]],
+  ["lib/rr_audio_extract.lua"] = [[return {}]],
   ["lib/rr_extract.lua"] = [[return {
     markerReady=function() return true end,
     ensure=function(mod, profile, opts)
     assert(opts and opts.world and type(opts.world.run) == "function")
+    assert(type(opts.audioExtractor) == "table")
     assert(opts.listMenus and type(opts.listMenus.write) == "function")
     assert(opts.streamRom and type(opts.streamRom.open) == "function")
     _G.__rrInstalled.world=true
