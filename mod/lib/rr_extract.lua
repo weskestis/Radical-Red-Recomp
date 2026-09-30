@@ -1024,6 +1024,34 @@ function Extractor.ensure(mod, Profile, opts)
   local pokemonExtractError = nil
   if not corePokemonReady(mod.cache, Profile) then
     collectgarbage("collect")
+
+    -- The pinned Pokemon extractor finishes with six auxiliary extractors
+    -- after its last shop_chrome checkpoint. On RR's expanded dataset that
+    -- tail can exceed Android's responsiveness budget even though each piece
+    -- is safe on its own. Wrap only those dynamically required modules so the
+    -- existing bootstrap coroutine can present a frame between them.
+    local tailModules = {
+      "src.import.gba.text_chrome_extract",
+      "src.import.gba.items_extract",
+      "src.import.gba.trainer_card_extract",
+      "src.import.gba.tm_case_extract",
+      "src.import.gba.berry_pouch_extract",
+      "src.import.gba.easy_chat_extract",
+    }
+    local tailOriginals = {}
+    for index, moduleName in ipairs(tailModules) do
+      local original = require(moduleName)
+      tailOriginals[moduleName] = original
+      local proxy = setmetatable({}, { __index = original })
+      proxy.run = function(...)
+        local ok, first, second = pcall(original.run, ...)
+        progress("pokemon_aux_tail", index, #tailModules)
+        if not ok then error(first, 0) end
+        return first, second
+      end
+      package.loaded[moduleName] = proxy
+    end
+
     local okPokemon, pokemon = pcall(
       require("src.import.gba.pokemon_extract").run,
       rom, collectingCache(mod.cache), {
@@ -1031,6 +1059,10 @@ function Extractor.ensure(mod, Profile, opts)
         numSpecies = Profile.SPECIES_COUNT,
         progress = progress,
       })
+
+    for moduleName, original in pairs(tailOriginals) do
+      package.loaded[moduleName] = original
+    end
     if not okPokemon then pokemonExtractError = tostring(pokemon) end
   end
   local pokemonOk, missingPokemon = corePokemonReady(mod.cache, Profile)
