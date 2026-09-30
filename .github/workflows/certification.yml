@@ -1,4 +1,5 @@
 name: Radical Red certification
+# Active certification uses GitHub-hosted public-repository runners.
 
 on:
   push:
