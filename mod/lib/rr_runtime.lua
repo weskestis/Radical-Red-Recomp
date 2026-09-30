@@ -913,8 +913,9 @@ function Runtime.install(mod, Profile, RR_Encounters)
 
   -- Validate every internal identity row. Populated forms without standalone
   -- ToneData reuse the canonical National Dex species cry, matching DPE's
-  -- form/base-species behavior. RR also retains FireRed's 25 reserved internal
-  -- slots (252..276); those zero-stat rows are not playable and need no sample.
+  -- form/base-species behavior. RR v4.1 has 27 zero-HP internal slots:
+  -- 252..276, Egg (412), and Palkia Primal (920). They are not playable cry
+  -- targets and do not require standalone samples.
   local Pokemon = require("src.core.game3.pokemon")
   local function validCrySample(cryIndex)
     local cry = Audio._pack.index.cries[cryIndex]
@@ -977,7 +978,7 @@ function Runtime.install(mod, Profile, RR_Encounters)
       cryReservedSpecies = cryReservedSpecies + 1
     end
   end
-  assert(cryMappedSpecies == 1350 and cryReservedSpecies == 25,
+  assert(cryMappedSpecies == 1348 and cryReservedSpecies == 27,
     ("Radical Red cry census changed: %d populated / %d reserved")
       :format(cryMappedSpecies, cryReservedSpecies))
   Audio._pack.index.cryIds = cryIds
