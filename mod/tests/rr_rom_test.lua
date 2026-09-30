@@ -144,6 +144,22 @@ for index = 252, 276 do
   assert(not rom:species(index).populated)
 end
 
+-- Exact v4.1 contains 27 zero-HP internal rows: the 25 old reserved Unown
+-- slots, Egg (412), and the internal Palkia Primal row (920).
+local zeroHp, expectedZeroHp = {}, {}
+for index = 252, 276 do expectedZeroHp[#expectedZeroHp + 1] = index end
+expectedZeroHp[#expectedZeroHp + 1] = 412
+expectedZeroHp[#expectedZeroHp + 1] = 920
+for index = 1, Profile.SPECIES_COUNT - 1 do
+  if rom:species(index).baseStats.hp == 0 then zeroHp[#zeroHp + 1] = index end
+end
+assert(#zeroHp == #expectedZeroHp,
+  ("zero-HP internal species census changed: %d"):format(#zeroHp))
+for i, expected in ipairs(expectedZeroHp) do
+  assert(zeroHp[i] == expected,
+    ("zero-HP internal species %d changed to %s"):format(i, tostring(zeroHp[i])))
+end
+
 local last = rom:species(1375)
 assert(last.name == "Chillet")
 
