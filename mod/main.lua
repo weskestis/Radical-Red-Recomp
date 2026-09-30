@@ -20,6 +20,7 @@ return function(mod)
   local World = loadLocal(mod, "lib/rr_world.lua")
   local Encounters = loadLocal(mod, "lib/rr_encounters.lua")
   local ListMenus = loadLocal(mod, "lib/rr_listmenus.lua")
+  local AudioExtract = loadLocal(mod, "lib/rr_audio_extract.lua")
   local Extractor = loadLocal(mod, "lib/rr_extract.lua")
   local Runtime = loadLocal(mod, "lib/rr_runtime.lua")
   local Battle = loadLocal(mod, "lib/rr_battle.lua")
@@ -82,6 +83,7 @@ return function(mod)
       listMenus = ListMenus,
       streamRom = StreamRom,
       visuals = Visuals,
+      audioExtractor = AudioExtract,
       onProgress = onProgress,
     })
 
