@@ -53,19 +53,20 @@ end
 do
   local species = 1291
   local row = rom:species(species)
-  local nat = rawU16(Profile.OFFSET.speciesToNationalDex + (species - 1) * 2)
+  local nationalBase = rom:pointerAt(RR.POINTER_SLOTS.speciesToNationalDex)
+  local nat = rawU16(nationalBase + (species - 1) * 2)
   local sameName = {}
   for id = 1, 1375 do
     if id ~= species and rom:name(id) == row.name then
       sameName[#sameName + 1] = ("%d:nat%d"):format(
-        id, rawU16(Profile.OFFSET.speciesToNationalDex + (id - 1) * 2))
+        id, rawU16(nationalBase + (id - 1) * 2))
     end
   end
   local nearby = {}
   for id = species - 5, species + 5 do
     nearby[#nearby + 1] = ("%d=%s/nat%d"):format(
       id, rom:name(id),
-      rawU16(Profile.OFFSET.speciesToNationalDex + (id - 1) * 2))
+      rawU16(nationalBase + (id - 1) * 2))
   end
   print(("CRY_DIAG species=%d name=%s nat=%d hp=%d types=%s/%s same=[%s] nearby=[%s]")
     :format(species, row.name, nat, row.baseStats.hp,
