@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: radical-red-certification-${{ github.ref }}
+  group: radical-red-certification-v2-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
