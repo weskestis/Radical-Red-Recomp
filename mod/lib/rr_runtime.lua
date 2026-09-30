@@ -941,14 +941,33 @@ function Runtime.install(mod, Profile, RR_Encounters)
       local sample = validCrySample(cryIndex)
       if not sample then
         local national = Pokemon.national(species)
-        local baseSpecies = national and Pokemon.speciesFromNational(national) or nil
-        assert(baseSpecies and baseSpecies ~= species,
-          ("Radical Red species %d has no standalone cry or canonical base species")
+        local baseSpecies
+
+        -- DPE/RR can keep several internal form ids under one National Dex
+        -- number. The host reverse map keeps only one of those duplicate ids,
+        -- which may itself be a form with no standalone ToneData. Resolve the
+        -- nearest same-National-Dex sibling that actually owns a valid sample.
+        if national then
+          for id = species - 1, 1, -1 do
+            if Pokemon.national(id) == national and validCrySample(id) then
+              baseSpecies = id
+              break
+            end
+          end
+          if not baseSpecies then
+            for id = species + 1, Profile.SPECIES_COUNT - 1 do
+              if Pokemon.national(id) == national and validCrySample(id) then
+                baseSpecies = id
+                break
+              end
+            end
+          end
+        end
+
+        assert(baseSpecies,
+          ("Radical Red species %d has no standalone or same-National-Dex cry sample")
             :format(species))
-        sample = validCrySample(baseSpecies)
-        assert(sample,
-          ("Radical Red species %d canonical cry %d has no valid sample")
-            :format(species, baseSpecies))
+        sample = assert(validCrySample(baseSpecies))
         cryIndex = baseSpecies
         cryIds[species] = baseSpecies
         cryAliasedSpecies = cryAliasedSpecies + 1
