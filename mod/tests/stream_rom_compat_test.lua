@@ -78,12 +78,19 @@ local AudioProfile = {
   AUDIO_SONG_COUNT = 526,
   SHA1 = "rr-v4.1-fixture",
 }
+local fullSongs, fullCries = {}, {}
+for song = 0, AudioProfile.AUDIO_SONG_COUNT - 1 do
+  fullSongs[song] = { id = song }
+end
+for cry = 0, AudioProfile.SPECIES_COUNT - 1 do
+  fullCries[cry] = { sampleId = 1 }
+end
 local fullAudio = {
   cryCount = 1376,
   songCount = 526,
   romSha1 = AudioProfile.SHA1,
-  songs = { [0] = {}, [525] = {} },
-  cries = { [0] = {}, [1375] = {} },
+  songs = fullSongs,
+  cries = fullCries,
   samples = { [1] = { id = 1 } },
 }
 assert(Extractor.expandedAudioIndexReady(fullAudio, AudioProfile),
