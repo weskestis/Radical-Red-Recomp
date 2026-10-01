@@ -815,10 +815,17 @@ local function runOptionalExtractors(rom, cache, Profile, log, progress)
     local okRequire, module = pcall(require, name)
     local ok, detail
     if okRequire and module and module.run then
-      ok, detail = pcall(module.run, rom, cache, {
-        cacheRoot = Profile.extractRoot(), force = true,
-        progress = progress,
-      })
+      local alreadyReady = name == "src.import.gba.bag_chrome_extract"
+        and type(module.ready) == "function"
+        and module.ready(cache, Profile.extractRoot())
+      if alreadyReady then
+        ok, detail = true, { skipped = true }
+      else
+        ok, detail = pcall(module.run, rom, cache, {
+          cacheRoot = Profile.extractRoot(), force = true,
+          progress = progress,
+        })
+      end
     end
     if okRequire and ok then
       okCount = okCount + 1
