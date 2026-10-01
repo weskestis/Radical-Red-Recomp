@@ -37,7 +37,18 @@ jobs:
         run: ci/prepare_engine.sh "$RUNNER_TEMP/gen1recomp"
 
       - name: Run ROM-free certification
+        env:
+          RELEASE_PACKAGE_OUT: ${{ runner.temp }}/Radical-Red-0.5.19.zip
         run: ci/run_rom_free.sh "$RUNNER_TEMP/gen1recomp"
+
+      - name: Upload playable Radical Red package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Radical-Red-0.5.19-playable
+          path: ${{ runner.temp }}/Radical-Red-0.5.19.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
 
   full-rom:
     name: Private exact-ROM and Android gate
