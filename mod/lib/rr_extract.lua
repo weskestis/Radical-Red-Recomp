@@ -1028,41 +1028,34 @@ function Extractor.ensure(mod, Profile, opts)
     -- The pinned Pokemon extractor finishes with six auxiliary extractors
     -- after its last shop_chrome checkpoint. On RR's expanded dataset that
     -- tail can exceed Android's responsiveness budget even though each piece
-    -- is safe on its own. The engine module has its own Lua environment, so
-    -- intercept that environment's require() for only those six modules.
-    local tailModules = {
-      ["src.import.gba.text_chrome_extract"] = 1,
-      ["src.import.gba.items_extract"] = 2,
-      ["src.import.gba.trainer_card_extract"] = 3,
-      ["src.import.gba.tm_case_extract"] = 4,
-      ["src.import.gba.berry_pouch_extract"] = 5,
-      ["src.import.gba.easy_chat_extract"] = 6,
+    -- is safe on its own. Wrap the actual cached module tables temporarily;
+    -- the previous environment-require interception never fired on LuaJIT.
+    local tailModuleNames = {
+      "src.import.gba.text_chrome_extract",
+      "src.import.gba.items_extract",
+      "src.import.gba.trainer_card_extract",
+      "src.import.gba.tm_case_extract",
+      "src.import.gba.berry_pouch_extract",
+      "src.import.gba.easy_chat_extract",
     }
-    local PokemonExtract = require("src.import.gba.pokemon_extract")
-    local extractEnv = getfenv and getfenv(PokemonExtract.run) or nil
-    local originalRequire = extractEnv and extractEnv.require or require
-    local wrappedRequire = type(extractEnv) == "table"
-      and type(originalRequire) == "function"
-
-    if wrappedRequire then
-      extractEnv.require = function(moduleName)
-        local original = originalRequire(moduleName)
-        local index = tailModules[moduleName]
-        if not index or type(original) ~= "table"
-            or type(original.run) ~= "function" then
-          return original
-        end
-        local proxy = setmetatable({}, { __index = original })
-        proxy.run = function(...)
-          local ok, first, second = pcall(original.run, ...)
-          progress("pokemon_aux_tail", index, 6)
-          if not ok then error(first, 0) end
+    local wrappedTail = {}
+    for index, moduleName in ipairs(tailModuleNames) do
+      local module = require(moduleName)
+      if type(module) == "table" and type(module.run) == "function" then
+        local originalRun = module.run
+        wrappedTail[#wrappedTail + 1] = {
+          module = module,
+          run = originalRun,
+        }
+        module.run = function(...)
+          local first, second = originalRun(...)
+          progress("pokemon_aux_tail", index, #tailModuleNames)
           return first, second
         end
-        return proxy
       end
     end
 
+    local PokemonExtract = require("src.import.gba.pokemon_extract")
     local okPokemon, pokemon = pcall(
       PokemonExtract.run,
       rom, collectingCache(mod.cache), {
@@ -1071,7 +1064,9 @@ function Extractor.ensure(mod, Profile, opts)
         progress = progress,
       })
 
-    if wrappedRequire then extractEnv.require = originalRequire end
+    for _, wrapped in ipairs(wrappedTail) do
+      wrapped.module.run = wrapped.run
+    end
     if not okPokemon then pokemonExtractError = tostring(pokemon) end
   end
   local pokemonOk, missingPokemon = corePokemonReady(mod.cache, Profile)
