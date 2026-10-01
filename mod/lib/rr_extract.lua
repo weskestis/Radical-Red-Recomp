@@ -583,7 +583,21 @@ end
 
 local function extractExpandedBattleAnims(rom, cache, Profile)
   local tables = configureExpandedBattleAnims(rom, Profile)
-  local BattleAnimExtract = require("src.import.gba.battle_anim_extract")
+
+  -- battle_anim_extract snapshots Versions.BATTLE_ANIMS / ANIM_TAG_NAMES into
+  -- locals when the module is first required. Other host startup paths may
+  -- have loaded it before RR restamped the expanded 1,004-move / 371-tag
+  -- tables, which would decode RR-only tags as generic TAG_### names. Load a
+  -- fresh temporary copy after configureExpandedBattleAnims(), then restore the
+  -- host's prior cached module when extraction finishes.
+  local moduleName = "src.import.gba.battle_anim_extract"
+  local priorBattleAnimExtract = package.loaded[moduleName]
+  package.loaded[moduleName] = nil
+  local okModule, BattleAnimExtract = pcall(require, moduleName)
+  package.loaded[moduleName] = priorBattleAnimExtract
+  assert(okModule and BattleAnimExtract,
+    "could not reload pinned battle-animation extractor: "
+      .. tostring(BattleAnimExtract))
 
   -- The expanded 1,004-move pack writes hundreds of RGBA/indexed PNG pairs.
   -- Release completed decode buffers and streamed ROM pages throughout the pass
