@@ -149,7 +149,7 @@
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4788,
-      "sha256": "40018a195e6b012f41ad03643416c07caad219c8d7d3ae98bf63b39f3daa664e"
+      "sha256": "e859fdb50648db07d6a03e6704d3f57cb30ff68b30e49337b4253fa3f6d6fe2d"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
@@ -168,8 +168,8 @@
     },
     {
       "path": "tests/engine_loader_test.lua",
-      "bytes": 89835,
-      "sha256": "cfb92d6c31911d25839ce287c6d21061ee400dfddccc724d6c5976427879163c"
+      "bytes": 89838,
+      "sha256": "70305dfe1ee7c57ded529ab95a7ffceb6d36b3e4ebcb21af6b9f5b491b87c0e0"
     },
     {
       "path": "tests/main_overlay_test.lua",
