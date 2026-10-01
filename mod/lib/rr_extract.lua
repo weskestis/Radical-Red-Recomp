@@ -817,6 +817,7 @@ local function runOptionalExtractors(rom, cache, Profile, log, progress)
     if okRequire and module and module.run then
       ok, detail = pcall(module.run, rom, cache, {
         cacheRoot = Profile.extractRoot(), force = true,
+        progress = progress,
       })
     end
     if okRequire and ok then
