@@ -821,6 +821,60 @@ local function installSaveTransferBridge(Profile)
   return true
 end
 
+local function installBattleAnimTiming(Anim)
+  if type(Anim) ~= "table" or type(Anim.update) ~= "function" then
+    return false
+  end
+  if Anim.__rrFixedStepOriginalUpdate then
+    Anim.__rrFixedStepEnabled = true
+    return true
+  end
+
+  local originalUpdate = Anim.update
+  local step = 1 / 60
+  local maxSteps = 4
+  Anim.__rrFixedStepOriginalUpdate = originalUpdate
+  Anim.__rrFixedStepAccumulator = 0
+  Anim.__rrFixedStepEnabled = true
+
+  Anim.update = function(dt)
+    local pack = Anim._pack
+    local moves = type(pack) == "table" and pack.moves or nil
+    local rrPack = Anim.__rrFixedStepEnabled
+      and type(moves) == "table"
+      and (moves[1003] ~= nil or moves["1003"] ~= nil)
+
+    if not rrPack then
+      Anim.__rrFixedStepAccumulator = 0
+      return originalUpdate(dt)
+    end
+
+    local delta = tonumber(dt) or step
+    if delta <= 0 then delta = step end
+    if delta > 0.1 then delta = 0.1 end
+
+    local accumulator = (Anim.__rrFixedStepAccumulator or 0) + delta
+    local ticks = math.floor(accumulator / step + 1e-9)
+    if ticks <= 0 then
+      Anim.__rrFixedStepAccumulator = accumulator
+      return
+    end
+    if ticks > maxSteps then ticks = maxSteps end
+
+    accumulator = accumulator - ticks * step
+    -- Drop excessive backlog instead of creating a catch-up spiral on a
+    -- severely overloaded frame. One residual simulation frame is enough.
+    if accumulator > step then accumulator = step end
+    Anim.__rrFixedStepAccumulator = accumulator
+
+    for _ = 1, ticks do
+      originalUpdate(step)
+    end
+  end
+
+  return true
+end
+
 function Runtime.install(mod, Profile, RR_Encounters, onProgress)
   assert(mod and mod.game, "Radical Red requires the live Game3 service")
   local function runtimeProgress(cur, total)
@@ -891,6 +945,7 @@ function Runtime.install(mod, Profile, RR_Encounters, onProgress)
   local Anim = require("src.core.game3.battle.anim")
   Anim._pack = nil
   Anim._packLoaded = false
+  local battleAnimFixedStep = installBattleAnimTiming(Anim)
 
   local Audio = require("src.core.game3.audio")
   local okAudio, audioErr = Audio.install(cache, { root = physicalRoot .. "/audio" })
@@ -1009,6 +1064,7 @@ function Runtime.install(mod, Profile, RR_Encounters, onProgress)
     saveScope = Profile.ID,
     saveTransferBridge = saveTransferBridge == true,
     battleAnimPackReset = true,
+    battleAnimFixedStep = battleAnimFixedStep == true,
     expandedCries = true,
     cryCount = Audio._pack.index.cryCount,
     cryMappedSpecies = cryMappedSpecies,
@@ -1025,5 +1081,6 @@ function Runtime.install(mod, Profile, RR_Encounters, onProgress)
 end
 
 Runtime._installSaveTransferBridge = installSaveTransferBridge
+Runtime._installBattleAnimTiming = installBattleAnimTiming
 
 return Runtime
