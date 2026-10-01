@@ -461,10 +461,17 @@ do
     assert(referenced > 0,
       name .. " animation had no concrete SFX id to validate")
     local first = script[1]
+    local ops = {}
+    for i, op in ipairs(script) do ops[i] = tostring(op.op or "") end
+    local signature = table.concat(ops, ",")
     local generic = first and first.op == "loadspritegfx"
       and first.tag == "IMPACT" and first.tag_idx == 135
+      and (signature ==
+          "loadspritegfx,monbg,createsprite,createsprite,createvisualtask,waitforvisualfinish,clearmonbg,blendoff,end"
+        or signature ==
+          "loadspritegfx,monbg,createsprite,delay,createsprite,createvisualtask,waitforvisualfinish,clearmonbg,end")
     assert(not generic,
-      name .. " still resolves to the host generic IMPACT fallback")
+      name .. " still resolves to a known generic IMPACT fallback sequence")
   end
 
   -- Audit the complete 1,004-row RR/CFRU move-animation table. The private
