@@ -800,7 +800,6 @@ local OPTIONAL_EXTRACTORS = {
   "src.import.gba.bag_chrome_extract",
   "src.import.gba.shop_chrome_extract",
   "src.import.gba.pokedex_chrome_extract",
-  "src.import.gba.storage_chrome_extract",
   "src.import.gba.trainer_card_extract",
   "src.import.gba.tm_case_extract",
   "src.import.gba.berry_pouch_extract",
@@ -815,9 +814,8 @@ local function runOptionalExtractors(rom, cache, Profile, log, progress)
     local okRequire, module = pcall(require, name)
     local ok, detail
     if okRequire and module and module.run then
-      local alreadyReady =
-        name == "src.import.gba.storage_chrome_extract"
-      if not alreadyReady and type(module.ready) == "function" then
+      local alreadyReady = false
+      if type(module.ready) == "function" then
         local readyOk, ready = pcall(module.ready, cache, Profile.extractRoot())
         alreadyReady = readyOk and ready == true
       end
