@@ -462,12 +462,15 @@ local function configureExpandedBattleAnims(rom, Profile)
   -- The host knows the 289 vanilla tag names. CFRU's extra rows use the same
   -- table/index contract; stable synthetic names are sufficient for extraction
   -- and runtime lookup because both sides consume the generated pack.
-  Versions.ANIM_TAG_NAMES = copy(Versions.ANIM_TAG_NAMES)
+  local tagNames = Versions.ANIM_TAG_NAMES or {}
   for index = 289, Profile.BATTLE_ANIM_TAG_COUNT - 1 do
-    if not Versions.ANIM_TAG_NAMES[index] then
-      Versions.ANIM_TAG_NAMES[index] = "RR_TAG_" .. tostring(index)
+    if not tagNames[index] then
+      tagNames[index] = "RR_TAG_" .. tostring(index)
     end
   end
+  Versions.ANIM_TAG_NAMES = tagNames
+  assert(Versions.ANIM_TAG_NAMES[304] == "RR_TAG_304",
+    "Radical Red expanded animation tag registry did not expose tag 304")
 
   return {
     movesTable = moves,
