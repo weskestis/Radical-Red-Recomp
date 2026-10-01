@@ -843,7 +843,10 @@ local function runOptionalExtractors(rom, cache, Profile, log, progress)
     else
       failures[#failures + 1] = name .. ": " .. tostring(detail or module)
     end
-    collectgarbage("collect")
+    -- Avoid multi-second stop-the-world collections during first launch.
+    -- Small incremental steps keep pressure bounded while allowing the
+    -- bootstrap coroutine to yield between interface extractors.
+    collectgarbage("step", 200)
   end
   if progress then progress("interface", #OPTIONAL_EXTRACTORS, #OPTIONAL_EXTRACTORS) end
   if #failures > 0 and log and log.warn then
