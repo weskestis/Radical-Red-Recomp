@@ -194,4 +194,51 @@ badAnim = {
 assert(not Extractor.expandedBattleAnimPackReady(badAnim, AnimProfile),
   "animation cache accepted truncated background rows")
 
-print("PASS stream_rom_compat_test: strings, byte arrays, get-only, Android tilesets, schema15-19 cache")
+-- Expanded RR animation packs can exceed LuaJIT's per-function 65,536
+-- constant ceiling when serialized as one giant literal. The chunker must
+-- preserve the exact pack shape while moving move/label constants into small
+-- local filler functions that also work in an empty environment.
+local sourceLines = {
+  "return {",
+  "  labels = {",
+}
+for i = 1, 96 do
+  sourceLines[#sourceLines + 1] = ('    ["L%d"] = {'):format(i)
+  sourceLines[#sourceLines + 1] = '      {'
+  sourceLines[#sourceLines + 1] = '        op = "end"'
+  sourceLines[#sourceLines + 1] = '      }'
+  sourceLines[#sourceLines + 1] = i < 96 and '    },' or '    }'
+end
+sourceLines[#sourceLines + 1] = "  },"
+sourceLines[#sourceLines + 1] = "  moves = {"
+for i = 0, 95 do
+  sourceLines[#sourceLines + 1] = ("    [%d] = {"):format(i)
+  sourceLines[#sourceLines + 1] = '      {'
+  sourceLines[#sourceLines + 1] = '        op = "end"'
+  sourceLines[#sourceLines + 1] = '      }'
+  sourceLines[#sourceLines + 1] = i < 95 and '    },' or '    }'
+end
+sourceLines[#sourceLines + 1] = "  },"
+sourceLines[#sourceLines + 1] = "  version = 5"
+sourceLines[#sourceLines + 1] = "}"
+sourceLines[#sourceLines + 1] = ""
+
+local chunked = Extractor.chunkBattleAnimPackSource(
+  table.concat(sourceLines, "\n"), 8)
+assert(chunked:find("RR chunked battle%-animation pack", 1, false),
+  "battle-animation pack chunker did not rewrite the monolith")
+local loader = loadstring or load
+local chunk, chunkErr = loader(chunked, "@rr_chunked_anim_fixture")
+assert(chunk, "chunked battle-animation fixture would not compile: "
+  .. tostring(chunkErr))
+if setfenv then setfenv(chunk, {}) end
+local okChunk, chunkPack = pcall(chunk)
+assert(okChunk and type(chunkPack) == "table"
+    and chunkPack.version == 5
+    and chunkPack.moves[0][1].op == "end"
+    and chunkPack.moves[95][1].op == "end"
+    and chunkPack.labels.L1[1].op == "end"
+    and chunkPack.labels.L96[1].op == "end",
+  "chunked battle-animation pack changed the reconstructed table")
+
+print("PASS stream_rom_compat_test: strings, byte arrays, get-only, Android tilesets, schema15-19 cache, chunked anim pack")
