@@ -31,6 +31,7 @@ for test_file in "${engine_tests[@]}"; do
 done
 
 mod_tests=(
+  rr_anim_timing_test.lua
   rr_mechanics_test.lua
   rr_natives_test.lua
   rr_qol_test.lua
