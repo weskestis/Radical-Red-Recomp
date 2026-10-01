@@ -478,6 +478,109 @@ local function configureExpandedBattleAnims(rom, Profile)
   }
 end
 
+local function chunkBattleAnimPackSource(source, chunkSize)
+  if type(source) ~= "string" or not source:match("^return%s+{") then
+    return source
+  end
+  chunkSize = tonumber(chunkSize) or 32
+
+  local lines = {}
+  for line in (source .. "\n"):gmatch("(.-)\n") do
+    lines[#lines + 1] = line
+  end
+
+  local fields = {}
+  local i = 2
+  while i <= #lines do
+    local key, rest = lines[i]:match("^  ([%a_][%w_]*) = (.*)$")
+    if key then
+      local block = { rest }
+      i = i + 1
+      while i <= #lines
+          and not lines[i]:match("^  [%a_][%w_]* = ")
+          and lines[i] ~= "}" do
+        block[#block + 1] = lines[i]
+        i = i + 1
+      end
+      local value = table.concat(block, "\n"):gsub(",%s*$", "")
+      fields[#fields + 1] = { key = key, value = value }
+    else
+      i = i + 1
+    end
+  end
+  if #fields == 0 then return source end
+
+  local function splitMapEntries(value)
+    local valueLines = {}
+    for line in (value .. "\n"):gmatch("(.-)\n") do
+      valueLines[#valueLines + 1] = line
+    end
+    if valueLines[1] ~= "{" then return nil end
+    local entries = {}
+    local j = 2
+    while j <= #valueLines do
+      if valueLines[j] == "  }" then break end
+      local entryKey, first = valueLines[j]:match("^    (.-) = (.*)$")
+      if not entryKey then return nil end
+      local block = { first }
+      j = j + 1
+      while j <= #valueLines
+          and not valueLines[j]:match("^    .- = ")
+          and valueLines[j] ~= "  }" do
+        block[#block + 1] = valueLines[j]
+        j = j + 1
+      end
+      entries[#entries + 1] = {
+        key = entryKey,
+        value = table.concat(block, "\n"):gsub(",%s*$", ""),
+      }
+    end
+    return entries
+  end
+
+  local out = {
+    "-- RR chunked battle-animation pack; avoids LuaJIT 65k constant ceiling.",
+    "local pack = {}",
+  }
+
+  for _, field in ipairs(fields) do
+    if field.key == "moves" or field.key == "labels" then
+      local entries = splitMapEntries(field.value)
+      if not entries then return source end
+      out[#out + 1] = ("pack.%s = {}"):format(field.key)
+      for first = 1, #entries, chunkSize do
+        local last = math.min(#entries, first + chunkSize - 1)
+        out[#out + 1] = "do"
+        out[#out + 1] = "  local function fill(t)"
+        for n = first, last do
+          local entry = entries[n]
+          local lhs
+          if entry.key:sub(1, 1) == "[" then
+            lhs = "t" .. entry.key
+          else
+            lhs = "t." .. entry.key
+          end
+          out[#out + 1] = "    " .. lhs .. " = " .. entry.value
+        end
+        out[#out + 1] = "  end"
+        out[#out + 1] = ("  fill(pack.%s)"):format(field.key)
+        out[#out + 1] = "end"
+      end
+    else
+      out[#out + 1] = "do"
+      out[#out + 1] = "  local function build()"
+      out[#out + 1] = "    return " .. field.value
+      out[#out + 1] = "  end"
+      out[#out + 1] = ("  pack.%s = build()"):format(field.key)
+      out[#out + 1] = "end"
+    end
+  end
+
+  out[#out + 1] = "return pack"
+  out[#out + 1] = ""
+  return table.concat(out, "\n")
+end
+
 local function extractExpandedBattleAnims(rom, cache, Profile)
   local tables = configureExpandedBattleAnims(rom, Profile)
   local BattleAnimExtract = require("src.import.gba.battle_anim_extract")
@@ -490,6 +593,11 @@ local function extractExpandedBattleAnims(rom, cache, Profile)
   local writes = 0
   local boundedCache = {}
   function boundedCache:write(path, body)
+    if type(path) == "string"
+        and path:match("/pokemon/battle_anims/pack%.lua$")
+        and type(body) == "string" then
+      body = chunkBattleAnimPackSource(body, 32)
+    end
     local ok, err = cache:write(path, body)
     writes = writes + 1
     if writes % 2 == 0 then
@@ -1207,6 +1315,7 @@ Extractor.rebuildCatalog = rebuildCatalog
 Extractor.markerReady = markerReady
 Extractor.expandedAudioIndexReady = expandedAudioIndexReady
 Extractor.expandedBattleAnimPackReady = expandedBattleAnimPackReady
+Extractor.chunkBattleAnimPackSource = chunkBattleAnimPackSource
 Extractor.cacheUpgradePlan = cacheUpgradePlan
 
 return Extractor
