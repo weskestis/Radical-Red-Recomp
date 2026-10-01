@@ -472,6 +472,14 @@ local function configureExpandedBattleAnims(rom, Profile)
   assert(Versions.ANIM_TAG_NAMES[304] == "RR_TAG_304",
     "Radical Red expanded animation tag registry did not expose tag 304")
 
+  -- CFRU relocates several vanilla animation helpers into expanded ROM space.
+  -- Move 90 (Fissure) retains FireRed's script structure; its otherwise
+  -- unresolved visual-task pointer is AnimTask_PositionFissureBgOnBattler,
+  -- which the host already implements.
+  local taskNames = Versions.ANIM_TASK_NAMES or {}
+  taskNames[0x090672DD] = "PositionFissureBgOnBattler"
+  Versions.ANIM_TASK_NAMES = taskNames
+
   return {
     movesTable = moves,
     pictureTable = picsA,
