@@ -1048,7 +1048,38 @@ function Extractor.ensure(mod, Profile, opts)
           run = originalRun,
         }
         module.run = function(...)
-          local first, second = originalRun(...)
+          local args = { ... }
+          if index == 2 and type(args[1]) == "table" then
+            local sourceRom = args[1]
+            local reads = 0
+            local function checkpointRead()
+              reads = reads + 1
+              if reads % 4096 == 0 then
+                progress("pokemon_items_read", reads, reads + 4096)
+              end
+            end
+            local romProxy = setmetatable({}, { __index = sourceRom })
+            if type(sourceRom.get) == "function" then
+              function romProxy:get(off)
+                checkpointRead()
+                return sourceRom:get(off)
+              end
+            end
+            if type(sourceRom.u16) == "function" then
+              function romProxy:u16(off)
+                checkpointRead()
+                return sourceRom:u16(off)
+              end
+            end
+            if type(sourceRom.u32) == "function" then
+              function romProxy:u32(off)
+                checkpointRead()
+                return sourceRom:u32(off)
+              end
+            end
+            args[1] = romProxy
+          end
+          local first, second = originalRun(unpack(args))
           progress("pokemon_aux_tail", index, #tailModuleNames)
           return first, second
         end
