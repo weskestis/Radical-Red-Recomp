@@ -520,12 +520,12 @@ local function chunkBattleAnimPackSource(source, chunkSize)
     local j = 2
     while j <= #valueLines do
       if valueLines[j] == "  }" then break end
-      local entryKey, first = valueLines[j]:match("^    (.-) = (.*)$")
+      local entryKey, first = valueLines[j]:match("^    (%S.-) = (.*)$")
       if not entryKey then return nil end
       local block = { first }
       j = j + 1
       while j <= #valueLines
-          and not valueLines[j]:match("^    .- = ")
+          and not valueLines[j]:match("^    %S.- = ")
           and valueLines[j] ~= "  }" do
         block[#block + 1] = valueLines[j]
         j = j + 1
