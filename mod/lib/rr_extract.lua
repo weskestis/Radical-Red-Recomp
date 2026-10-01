@@ -459,6 +459,14 @@ local function configureExpandedBattleAnims(rom, Profile)
   anim.bg_count = Profile.BATTLE_ANIM_BG_COUNT
   Versions.BATTLE_ANIMS = anim
 
+  -- RR/CFRU relocates some stock animation helpers into expanded ROM space.
+  -- Move 90 (Fissure) uses this relocated copy at the same script position and
+  -- with the same args as FireRed's AnimTask_PositionFissureBgOnBattler.
+  Versions.ANIM_TASK_NAMES = Versions.ANIM_TASK_NAMES or {}
+  Versions.ANIM_TASK_NAMES[0x090672DD] = "PositionFissureBgOnBattler"
+  assert(Versions.ANIM_TASK_NAMES[0x090672DD] == "PositionFissureBgOnBattler",
+    "Radical Red Fissure task alias was not installed")
+
   -- The host knows the 289 vanilla tag names. CFRU's extra rows use the same
   -- table/index contract; stable synthetic names are sufficient for extraction
   -- and runtime lookup because both sides consume the generated pack.
