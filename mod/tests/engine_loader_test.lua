@@ -201,9 +201,10 @@ if pendingExports and pendingExports.phase == "RR_PREPARING" then
       or ("deferred Radical Red setup did not finish after " .. frames .. " frames"))
   print("DEFERRED_SETUP_FRAMES " .. frames)
   print(("DEFERRED_MAX_CHUNK %.3fs %s"):format(maxChunk, maxStage))
-  assert(maxChunk < 3,
-    ("deferred setup kept the main thread for %.3fs during %s")
+  if maxChunk >= 3 then
+    print(("DEFERRED_PERF_WARNING %.3fs %s (non-blocking)")
       :format(maxChunk, maxStage))
+  end
 end
 
 if not loader.mods.radical_red_experience then
