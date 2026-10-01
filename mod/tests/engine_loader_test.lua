@@ -389,7 +389,7 @@ do
     }
     if seen[script] then return out end
     seen[script] = true
-    for _, op in ipairs(script) do
+    for opIndex, op in ipairs(script) do
       out.ops = out.ops + 1
       if SOUND_OP[op.op] then
         out.sound = true
@@ -399,7 +399,13 @@ do
       if VISUAL_OP[op.op] then out.visual = true end
       if (op.op == "createvisualtask" or op.op == "createsoundtask")
           and type(op.task) == "string" and op.task:match("^0x") then
-        out.unresolved[#out.unresolved + 1] = op.op .. ":" .. op.task
+        local args = {}
+        for i, value in ipairs(op.args or {}) do
+          args[i] = tostring(value)
+        end
+        out.unresolved[#out.unresolved + 1] =
+          ("%s:%s op=%d args=[%s]")
+            :format(op.op, op.task, opIndex, table.concat(args, ","))
       elseif op.op == "createsprite"
           and op.template == nil and op.callback == nil
           and op.tag == nil and not op.noGfx then
