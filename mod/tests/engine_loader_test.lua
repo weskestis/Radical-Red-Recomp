@@ -500,6 +500,28 @@ do
   local songs = assert(Audio._pack and Audio._pack.index
       and Audio._pack.index.songs,
     "RR audio pack is unavailable for the expanded move audit")
+  local function diagnosticTasks(script, seen)
+    if type(script) ~= "table" then return end
+    seen = seen or {}
+    if seen[script] then return end
+    seen[script] = true
+    for _, op in ipairs(script) do
+      if op.op == "createvisualtask" then
+        local args = {}
+        for i, value in ipairs(op.args or {}) do args[i] = tostring(value) end
+        print(("MOVE160_TASK %s priority=%s args=%s")
+          :format(tostring(op.task), tostring(op.priority),
+            table.concat(args, ",")))
+      end
+      for _, key in ipairs({ "label", "label1", "label2" }) do
+        local label = op[key]
+        if label and pack.labels[label] then
+          diagnosticTasks(pack.labels[label], seen)
+        end
+      end
+    end
+  end
+
   local animationRows, referencedSfx = 0, 0
   for id = 0, 1003 do
     local ptr = readU32(movesTable + id * 4)
@@ -508,6 +530,7 @@ do
     local script = assert(pack.moves[id],
       ("RR move %d has no decoded animation row"):format(id))
     local audit = auditScript(script)
+    if id == 160 then diagnosticTasks(script) end
     assert(audit.ops > 0,
       ("RR move %d decoded to an empty animation"):format(id))
     assert(#audit.unresolved == 0,
