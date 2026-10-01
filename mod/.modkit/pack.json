@@ -43,8 +43,8 @@
     },
     {
       "path": "lib/rr_extract.lua",
-      "bytes": 47674,
-      "sha256": "af5430493ddcb60c743bc6f66c21663b4a2300f5aece66d63477c99bad3d6a39"
+      "bytes": 47888,
+      "sha256": "a5cebacc4c690d8acd54497a86ca29becaabaa1f8015a1678ea59075bb8f7f63"
     },
     {
       "path": "lib/rr_facilities.lua",
@@ -149,7 +149,7 @@
     {
       "path": "SHA256SUMS.txt",
       "bytes": 4788,
-      "sha256": "f389d6d29e4cd0c4ce507c36f0a64ce08b4a2656a21989676de76efdfdf9678d"
+      "sha256": "69e2fc2002fc7053fb44707a6818b4675bf69856392205e5b5ac5681c696a78e"
     },
     {
       "path": "tests/async_bootstrap_test.lua",
