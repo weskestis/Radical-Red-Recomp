@@ -820,6 +820,15 @@ local function runOptionalExtractors(rom, cache, Profile, log, progress)
         local readyOk, ready = pcall(module.ready, cache, Profile.extractRoot())
         alreadyReady = readyOk and ready == true
       end
+      if not alreadyReady
+          and name == "src.import.gba.storage_chrome_extract"
+          and cache and type(cache.read) == "function" then
+        local manifest = cache:read(Profile.extractRoot()
+          .. "/pokemon/storage/manifest.lua")
+        local version = type(manifest) == "string"
+          and tonumber(manifest:match("version%s*=%s*(%d+)")) or nil
+        alreadyReady = version == tonumber(module.FORMAT_VERSION)
+      end
       if alreadyReady then
         ok, detail = true, { skipped = true }
       else
