@@ -91,3 +91,10 @@ with zipfile.ZipFile(archive) as package:
         raise SystemExit("forbidden release payloads: " + ", ".join(forbidden))
 print("PASS reproducible ROM-free package")
 PY
+
+if [[ -n "${RELEASE_PACKAGE_OUT:-}" ]]; then
+  mkdir -p -- "$(dirname -- "$RELEASE_PACKAGE_OUT")"
+  cp -- "$first" "$RELEASE_PACKAGE_OUT"
+  sha256sum "$RELEASE_PACKAGE_OUT"
+  echo "PLAYABLE_PACKAGE $RELEASE_PACKAGE_OUT"
+fi
