@@ -401,9 +401,10 @@ do
           and type(op.task) == "string" and op.task:match("^0x") then
         out.unresolved[#out.unresolved + 1] = op.op .. ":" .. op.task
       elseif op.op == "createsprite"
-          and op.template == nil and op.callback == nil then
+          and op.template == nil and op.callback == nil
+          and op.tag == nil and not op.noGfx then
         out.unresolved[#out.unresolved + 1] =
-          "createsprite:" .. tostring(op.tag or "<no tag>")
+          "createsprite:<no template/callback/tag>"
       end
       if (op.op == "loadspritegfx" or op.op == "unloadspritegfx")
           and op.tag and not (pack.tags and pack.tags[op.tag]) then
