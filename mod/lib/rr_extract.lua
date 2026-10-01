@@ -815,9 +815,11 @@ local function runOptionalExtractors(rom, cache, Profile, log, progress)
     local okRequire, module = pcall(require, name)
     local ok, detail
     if okRequire and module and module.run then
-      local alreadyReady = name == "src.import.gba.bag_chrome_extract"
-        and type(module.ready) == "function"
-        and module.ready(cache, Profile.extractRoot())
+      local alreadyReady = false
+      if type(module.ready) == "function" then
+        local readyOk, ready = pcall(module.ready, cache, Profile.extractRoot())
+        alreadyReady = readyOk and ready == true
+      end
       if alreadyReady then
         ok, detail = true, { skipped = true }
       else
